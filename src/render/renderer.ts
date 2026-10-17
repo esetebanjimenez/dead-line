@@ -36,6 +36,11 @@ export class Renderer {
       shambler2: ['idle', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
+    try {
+      this.tex.set('env', await Assets.load<Texture>(`${base}env_kingdom_bg.png`));
+    } catch {
+      /* fall back to flat ground */
+    }
     for (const st of ['intact', 'damaged66', 'damaged33']) {
       const name = `wall_t1_${st}_00`;
       try {
@@ -80,6 +85,15 @@ export class Renderer {
     g.rect(0, BAND_FAR_Y - 60, this.lw, this.lh - BAND_FAR_Y + 60).fill(0x587a3e);
     g.rect(0, BAND_FAR_Y - 20, this.lw, 200).fill(0x6e8a4c);
     this.world.sortableChildren = true;
+    const env = this.tex.get('env');
+    if (env) {
+      const bg = new Sprite(env);
+      bg.width = CANVAS_W;
+      bg.height = CANVAS_H;
+      bg.zIndex = -10;
+      this.world.addChild(bg);
+      g.visible = false;
+    }
     this.world.addChild(g, this.base, this.wall, this.pressure);
     this.base
       .rect(w.data.config.world.baseX * X_SCALE - 38, 520 - 90, 46, 96)
@@ -106,7 +120,9 @@ export class Renderer {
     const bar = new Graphics();
     const sprite = new Sprite();
     sprite.anchor.set(0.5, 1);
-    root.addChild(body, sprite, bar);
+    const shadow = new Graphics();
+    shadow.ellipse(0, -2, 26, 6).fill({ color: 0x000000, alpha: 0.28 });
+    root.addChild(shadow, body, sprite, bar);
     this.world.addChild(root);
     return { root, body, bar, sprite, used: true };
   }
