@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { nextStructureCost, tryDeploy, repairWall, buildStructure, skipPause, upgradeWall, reinforce } from '../sim';
+import { nextStructureCost, tryDeploy, repairWall, buildStructure, skipPause, upgradeWall, reinforce, reinforceFull } from '../sim';
 import { onPress } from '../input/pointer';
 import { keyToSlot } from './keys';
 
@@ -11,7 +11,7 @@ export class Hud {
   private skip!: { el: HTMLButtonElement; n: HTMLElement };
   private tower?: { el: HTMLButtonElement; n: HTMLElement; id: string };
   private upgrade!: { el: HTMLButtonElement; n: HTMLElement };
-  private reinforceBtn!: { el: HTMLButtonElement; fill: HTMLElement };
+  private reinforceBtn!: { el: HTMLButtonElement; fill: HTMLElement; label: HTMLElement };
   private disabled = new Set<string>(); // slot ids whose button is dimmed: clicks and hotkeys are ignored
   private repair!: { el: HTMLButtonElement; n: HTMLElement };
 
@@ -70,6 +70,7 @@ export class Hud {
     const rb = document.createElement('button');
     rb.className = 'deploy';
     rb.innerHTML = `<div class="fill"></div><span>Reinforce</span><span class="n cost">${rf.cost}</span><span data-k style="font-size:10px">[${slots.indexOf('reinforce') + 1}]</span>`;
+    rb.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_reinforce_00.png)`;
     const doReinforce = () => {
       if (rb.classList.contains('empty')) return; // dimmed: ignore
       if (reinforce(this.getWorld()) !== 'ok') {
@@ -81,7 +82,7 @@ export class Hud {
     onPress(rb, doReinforce);
     slotActions.set('reinforce', doReinforce);
     hud.appendChild(rb);
-    this.reinforceBtn = { el: rb, fill: rb.querySelector('.fill') as HTMLElement };
+    this.reinforceBtn = { el: rb, fill: rb.querySelector('.fill') as HTMLElement, label: rb.querySelector('span') as HTMLElement };
     const go = document.createElement('button');
     go.className = 'deploy';
     go.style.display = 'none';
@@ -144,7 +145,9 @@ export class Hud {
     }
     {
       const rf = w.data.config.world.reinforce;
-      const off = w.status !== 'playing' || w.phase !== 'fighting' || w.reinforceCd > 0 || w.scrap < rf.cost;
+      const full = w.status === 'playing' && w.phase === 'fighting' && reinforceFull(w);
+      const off = w.status !== 'playing' || w.phase !== 'fighting' || w.reinforceCd > 0 || w.scrap < rf.cost || full;
+      this.reinforceBtn.label.textContent = full && w.reinforceCd <= 0 ? 'Charges full' : 'Reinforce';
       this.reinforceBtn.el.classList.toggle('empty', off);
       if (off) this.disabled.add('reinforce');
       else this.disabled.delete('reinforce');

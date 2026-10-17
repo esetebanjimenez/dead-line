@@ -209,15 +209,27 @@ export function upgradeWall(w: World): 'ok' | 'locked' | 'owned' | 'no-scrap' | 
 }
 
 /** Player action (M4 Module A): during a wave, pay Scrap to refill every deploy charge to max. Has its own cooldown. */
-export function reinforce(w: World): 'ok' | 'no-scrap' | 'cooldown' | 'bad-phase' {
+/** True when every unlocked deploy charge is already full (locked units such as the Sniper before their wave do not count). The HUD reads this too. */
+export function reinforceFull(w: World): boolean {
+  for (const u of w.data.units) {
+    if (u.team !== 'player' || u.cost !== undefined) continue;
+    if (u.unlockWave !== undefined && w.wave < u.unlockWave) continue;
+    if (w.charges[u.id].count < u.maxCharges!) return false;
+  }
+  return true;
+}
+
+export function reinforce(w: World): 'ok' | 'no-scrap' | 'cooldown' | 'bad-phase' | 'full' {
   const r = w.data.config.world.reinforce;
   if (w.status !== 'playing' || w.phase !== 'fighting') return 'bad-phase';
   if (w.reinforceCd > 0) return 'cooldown';
+  if (reinforceFull(w)) return 'full'; // nothing to refill: never spend Scrap or start the cooldown
   if (w.scrap < r.cost) return 'no-scrap';
   w.scrap -= r.cost;
   w.reinforceCd = r.cooldown;
   for (const u of w.data.units) {
     if (u.team !== 'player' || u.cost !== undefined) continue;
+    if (u.unlockWave !== undefined && w.wave < u.unlockWave) continue; // never grant a locked unit's charge early
     const c = w.charges[u.id];
     c.count = u.maxCharges!;
     c.timer = 0;

@@ -21,7 +21,7 @@ export const config: GameConfig = {
     maxUnitsAlive: 8,
     globalDeployCooldown: 0,
     towerExtraSlotCosts: [90],
-    reinforce: { cost: 80, cooldown: 20 },
+    reinforce: { cost: 80, cooldown: 15 },
   },
   // From Feel Spec v0.2 (placeholders).
   feel: {

@@ -6,6 +6,7 @@ import { gameData, validateData } from '../src/data';
 import {
   upgradeWall,
   reinforce,
+  reinforceFull,
   aliveCount,
   computePressure,
   createWorld,
@@ -528,6 +529,7 @@ describe('reinforce (M4 module A)', () => {
     w.scrap = 500;
     expect(reinforce(w)).toBe('bad-phase');
     w.phase = 'fighting';
+    w.charges['rifleman'].count = 0;
     w.scrap = cfg.cost - 1;
     expect(reinforce(w)).toBe('no-scrap');
     w.scrap = 500;
@@ -535,10 +537,26 @@ describe('reinforce (M4 module A)', () => {
     expect(w.scrap).toBe(500 - cfg.cost);
     expect(reinforce(w)).toBe('cooldown');
     expect(w.scrap).toBe(500 - cfg.cost);
+    expect(cfg.cooldown).toBe(15);
     run(w, cfg.cooldown + 0.1);
     w.phase = 'fighting';
+    w.charges['rifleman'].count = 0;
     expect(w.reinforceCd).toBe(0);
     expect(reinforce(w)).toBe('ok');
+  });
+  it('is refused without spending Scrap when every unlocked charge is full, and never grants a locked Sniper charge', () => {
+    const w = fighting();
+    w.scrap = 500;
+    expect(reinforceFull(w)).toBe(true);
+    expect(reinforce(w)).toBe('full');
+    expect(w.scrap).toBe(500);
+    expect(w.reinforceCd).toBe(0);
+    w.charges['sniper'].count = 0; // locked before its wave: does not count
+    expect(reinforce(w)).toBe('full');
+    expect(w.charges['sniper'].count).toBe(0);
+    w.charges['shield'].count = 0;
+    expect(reinforce(w)).toBe('ok');
+    expect(w.charges['sniper'].count).toBe(0);
   });
   it('refills every deploy charge to max and resets timers, never touching the Tower', () => {
     const w = fighting();
@@ -547,6 +565,7 @@ describe('reinforce (M4 module A)', () => {
     expect(reinforce(w)).toBe('ok');
     for (const u of gameData.units) {
       if (u.team !== 'player' || u.cost !== undefined) continue;
+      if (u.unlockWave !== undefined && w.wave < u.unlockWave) continue; // locked: untouched
       expect(w.charges[u.id]).toEqual({ count: u.maxCharges, timer: 0 });
     }
     expect(w.charges['tower']).toBeUndefined();
