@@ -31,9 +31,9 @@ export class Renderer {
       shield: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       tower: ['idle'],
       sniper: ['idle', 'attack', 'death'],
-      firearcher: ['idle', 'attack', 'death'],
+      firearcher: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       cavalry: ['idle', 'attack', 'death'],
-      hammerknight: ['idle', 'attack', 'death'],
+      hammerknight: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       footman: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       footman2: ['idle', 'attack', 'death'],
     };
