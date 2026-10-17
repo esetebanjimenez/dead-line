@@ -189,7 +189,7 @@ export class Renderer {
       const drop = e.waitTotal !== undefined ? 0 : (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
       const dep = depthOf(e.id);
       const p = project(dep, x + (((e.id * 7) % 13) / 12 - 0.5) * MAX_JITTER_X);
-      p.x += wallClearance(x, w.data.config.world.wallX);
+      if (e.team === 'zombie' || e.def.cost !== undefined) p.x += wallClearance(x, w.data.config.world.wallX); // walkers pass through the gate line without a visual jump
       v.root.position.set(p.x, p.y - drop * p.scale);
       v.root.zIndex = Math.round(p.z * 1000);
       // Sprites face right in the art. Zombies move left, so they are mirrored; player units face right.
