@@ -154,6 +154,9 @@ describe('geometry', () => {
     const zombie = unit('shambler');
     const rifleReach = wallX - (rifle.holdOffset ?? 0) + rifle.range;
     const zombieStop = wallX - (shield.holdOffset ?? 0) + zombie.range;
-    expect(rifleReach).toBeGreaterThanOrEqual(zombieStop);
+    const margin = rifleReach - zombieStop;
+    // Reach must cover the Shield line, but not by so much that Riflemen no longer need it.
+    expect(margin).toBeGreaterThanOrEqual(0);
+    expect(margin).toBeLessThanOrEqual(25);
   });
 });
