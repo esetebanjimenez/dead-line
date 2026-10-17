@@ -103,6 +103,8 @@ export const units: UnitDef[] = [
     hp: 50,
     dps: 0,
     range: 170,
+    plantX: 350,
+    plantDelay: 1,
     attackInterval: 2.5,
     windup: 0.6,
     speed: 28,

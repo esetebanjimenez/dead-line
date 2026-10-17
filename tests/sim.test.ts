@@ -225,6 +225,9 @@ describe('fire archer puddle (M2)', () => {
     const shield = spawn(w, 'shield', 300)!;
     const arch = spawn(w, 'spitter', 440)!;
     run(w, 0.2);
+    expect(arch.planted).toBe(true);
+    expect(arch.aimId).toBeUndefined(); // plant-and-aim pause: no shot yet
+    run(w, 1);
     expect(arch.aimId).toBe(shield.id);
     expect(shield.hp).toBe(shield.maxHp);
     run(w, 1);
@@ -233,6 +236,23 @@ describe('fire archer puddle (M2)', () => {
     expect(back.hp).toBe(back.maxHp);
     run(w, 3);
     expect(w.puddles.every((p) => p.age < p.ttl)).toBe(true);
+  });
+});
+
+describe('fire archer approach (M2)', () => {
+  it('walks past the wall to x 350, then plants and shoots the wall after the 1s pause', () => {
+    const w = createWorld(gameData);
+    w.phase = 'done';
+    const arch = spawn(w, 'spitter', 440)!;
+    run(w, 0.5);
+    expect(arch.x).toBeLessThan(440); // did not stop at wall range (x 430)
+    run(w, 4);
+    expect(arch.x).toBeLessThan(351);
+    expect(arch.x).toBeGreaterThan(348);
+    run(w, 1.2);
+    expect(arch.aimX).toBeUndefined();
+    expect(arch.planted).toBe(true);
+    expect(w.puddles.length + (arch.windupLeft >= 0 ? 1 : 0)).toBeGreaterThan(0);
   });
 });
 

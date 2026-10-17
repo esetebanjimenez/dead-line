@@ -12,7 +12,8 @@ export interface UnitDef {
   speed: number; // world units per second
   knockback: number; // pixels pushed onto a zombie hit by this unit
   knockbackImmune?: boolean;
-  targeting?: 'backline'; // zombie only: aims at the rearmost player unit in range instead of the nearest one
+  plantX?: number; // zombie only: advances past the wall until x <= plantX (or a frontline unit is in range), then stops for good
+  plantDelay?: number; // zombie only: seconds of plant-and-aim pause before the first shot
   puddle?: { halfWidth: number; dps: number; duration: number }; // zombie only: attack lands a damaging patch instead of direct damage
   maxAlive?: number; // player only: per-type cap on living units
   holdOffset?: number; // player only: stops this far behind the wall

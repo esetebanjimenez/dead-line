@@ -10,6 +10,7 @@ export interface Entity {
   hp: number;
   maxHp: number;
   cooldown: number;
+  planted?: boolean; // ranged zombies with plantX: true once stopped
   windupLeft: number; // < 0 means not winding up
   hitFlash: number;
   dead: boolean;

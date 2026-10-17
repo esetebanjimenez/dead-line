@@ -24,16 +24,10 @@ function findTarget(w: World, e: Entity): Target | null {
     }
     return best;
   };
-  if (e.def.targeting === 'backline') {
-    let rear: Entity | null = null;
-    for (const o of w.entities) {
-      if (o.dead || o.team !== 'player' || o.x >= e.x || e.x - o.x > r) continue;
-      if (!rear || o.x < rear.x) rear = o;
-    }
-    if (rear) return { kind: 'entity', e: rear };
-  }
   const front = nearestUnit(true);
   if (front) return { kind: 'entity', e: front };
+  // Planting units keep walking past the wall until they reach their plant point.
+  if (e.def.plantX !== undefined && !e.planted && e.x > e.def.plantX) return null;
   if (w.wallHp > 0) return e.x - cfg.wallX <= r ? { kind: 'wall' } : null;
   const back = nearestUnit(false);
   if (back) return { kind: 'entity', e: back };
@@ -89,6 +83,10 @@ export function combatSystem(w: World, dt: number): void {
       continue;
     }
     if (t) {
+      if (e.def.plantDelay && !e.planted) {
+        e.planted = true;
+        e.cooldown = Math.max(e.cooldown, e.def.plantDelay);
+      }
       if (e.cooldown <= 0) {
         e.windupLeft = e.def.windup;
         e.aimX = t.kind === 'entity' ? t.e.x : undefined;
@@ -96,7 +94,9 @@ export function combatSystem(w: World, dt: number): void {
       }
       continue;
     }
-    if (e.team === 'zombie') e.x -= e.def.speed * speedMult * dt;
+    if (e.team === 'zombie') {
+      e.x -= e.def.speed * speedMult * dt;
+    }
     // Player units hold position (they spawn at their hold slot).
   }
 }
