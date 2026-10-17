@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Dead Line</title>
+<style>
+  html,body{margin:0;height:100%;background:#1d2a14;overflow:hidden;font-family:system-ui,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
+  #stage{position:absolute;inset:0}
+  #hud{position:absolute;left:0;right:0;bottom:0;display:flex;gap:12px;justify-content:center;padding:10px;pointer-events:none}
+  .deploy{pointer-events:auto;width:84px;height:84px;border-radius:50%;border:3px solid #fff;background:#3f5a22;color:#fff;font-weight:800;font-size:12px;position:relative;cursor:pointer;overflow:hidden;padding:0}
+  .deploy .fill{position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.55) calc((1 - var(--p,1))*360deg),transparent 0)}
+  .deploy span{position:relative;display:block}
+  .deploy .n{font-size:22px}
+  .deploy.empty{border-color:#d8343a;animation:none}
+  .deploy.shake{animation:shake .2s}
+  @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  #top{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;gap:14px;font-weight:800;text-shadow:0 2px 0 #0008;pointer-events:none}
+  .bar{width:130px;height:14px;border:2px solid #fff;border-radius:8px;background:#0006;overflow:hidden}
+  .bar i{display:block;height:100%;width:100%}
+  #banner{position:absolute;top:22%;left:0;right:0;text-align:center;font-size:34px;font-weight:900;color:#fff;text-shadow:0 3px 0 #d8343a;background:linear-gradient(90deg,transparent,#d8343acc,transparent);padding:8px;display:none;pointer-events:none}
+  #end{position:absolute;inset:0;background:#000a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:40px;font-weight:900}
+  #end button{font-size:22px;padding:10px 26px;border-radius:24px;border:3px solid #fff;background:#d8343a;color:#fff;font-weight:800}
+  #perf{position:absolute;left:6px;top:6px;font:11px monospace;background:#0008;padding:3px 6px;border-radius:4px;display:none;pointer-events:none;white-space:pre}
+  #rotate{position:fixed;inset:0;background:#1d2a14;display:none;align-items:center;justify-content:center;text-align:center;font-size:24px;font-weight:800;z-index:9}
+  @media (orientation:portrait) and (max-width:800px){#rotate{display:flex}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="top"><div>Wave <span id="wave">1</span></div><div>Wall <div class="bar"><i id="wallbar" style="background:#c9a96b"></i></div></div><div>Base <div class="bar"><i id="basebar" style="background:#d8343a"></i></div></div></div>
+<div id="banner"></div>
+<div id="hud"></div>
+<div id="perf"></div>
+<div id="end"><div id="endtext"></div><button id="restart">Play again</button></div>
+<div id="rotate">Rotate your device to landscape</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

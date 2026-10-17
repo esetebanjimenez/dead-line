@@ -1,0 +1,8 @@
+import type { GameConfig } from './types';
+
+export const config: GameConfig = {
+  world: { width: 1000, height: 400, groundY: 320, baseX: 40, wallX: 260, wallHp: 400, baseHp: 200, spawnX: 1000, spawnPlayerX: 80, entityCap: 150 },
+  // From Feel Spec v0.2 (placeholders).
+  feel: { hitFlash: 0.06, surgeSpeedMult: 1.15, surgeDuration: 3, deathFade: 0.4 },
+  pacing: { bannerTime: 3, wavePause: 3 },
+};
