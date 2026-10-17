@@ -41,6 +41,11 @@ export class Renderer {
     } catch {
       /* fall back to flat ground */
     }
+    try {
+      this.tex.set('base', await Assets.load<Texture>(`${base}base_t1_intact_00.png`));
+    } catch {
+      /* fall back to the placeholder box */
+    }
     for (const st of ['intact', 'damaged66', 'damaged33']) {
       const name = `wall_t1_${st}_00`;
       try {
@@ -100,10 +105,18 @@ export class Renderer {
       g.visible = false;
     }
     this.world.addChild(g, this.base, this.wall, this.pressure);
-    this.base
-      .rect(w.data.config.world.baseX * X_SCALE - 38, 520 - 90, 46, 96)
-      .fill(0x7c8fa3)
-      .stroke({ color: 0x222222, width: 2 });
+    const baseTex = this.tex.get('base');
+    if (baseTex) {
+      const bs = new Sprite(baseTex);
+      bs.anchor.set(0.5, 1);
+      // Keep the whole gate on screen: centre it at least half its width from the left edge.
+      bs.position.set(Math.max(w.data.config.world.baseX * X_SCALE, baseTex.width / 2 + 4), 575);
+      this.world.addChild(bs);
+    } else
+      this.base
+        .rect(w.data.config.world.baseX * X_SCALE - 38, 520 - 90, 46, 96)
+        .fill(0x7c8fa3)
+        .stroke({ color: 0x222222, width: 2 });
     this.app.renderer.on('resize', () => this.fit());
     this.fit();
   }
