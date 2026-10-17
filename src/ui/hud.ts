@@ -50,7 +50,7 @@ export class Hud {
     if (tw) {
       const tb = document.createElement('button');
       tb.className = 'deploy';
-      tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span data-k style="font-size:10px">[${slots.indexOf(tw.id) + 1}]</span>`;
+      tb.innerHTML = `<span>${tw.name}</span><span class="n cost">${tw.cost}</span><span data-k style="font-size:10px">[${slots.indexOf(tw.id) + 1}]</span>`;
       tb.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${tw.id}_00.png)`;
       const build = () => {
         if (buildStructure(this.getWorld(), tw.id) !== 'ok') {
@@ -78,7 +78,7 @@ export class Hud {
     this.skip = { el: go, n: goN };
     const rep = document.createElement('button');
     rep.className = 'deploy';
-    rep.innerHTML = '<span>Repair</span><span class="n"></span><span style="font-size:10px">[R]</span>';
+    rep.innerHTML = '<span>Repair</span><span class="n cost"></span><span style="font-size:10px">[R]</span>';
     const repN = rep.querySelector('.n') as HTMLElement;
     const doRepair = () => void repairWall(this.getWorld());
     onPress(rep, doRepair);
@@ -89,7 +89,7 @@ export class Hud {
     this.repair = { el: rep, n: repN };
     const up = document.createElement('button');
     up.className = 'deploy';
-    up.innerHTML = `<span>Wall tier 2</span><span class="n">${w.data.config.world.wallTier2.cost}</span><span data-k style="font-size:10px">[U]</span>`;
+    up.innerHTML = `<span>Wall tier 2</span><span class="n cost">${w.data.config.world.wallTier2.cost}</span><span data-k style="font-size:10px">[U]</span>`;
     const doUpgrade = () => {
       if (upgradeWall(this.getWorld()) !== 'ok') {
         up.classList.remove('shake');
@@ -127,6 +127,8 @@ export class Hud {
     const t2Locked = w.wave < t2.unlockWave;
     this.upgrade.el.style.display = w.wallTier === 1 ? '' : 'none';
     this.upgrade.n.textContent = t2Locked ? `Wave ${t2.unlockWave}` : `${t2.cost}`;
+    this.upgrade.n.classList.toggle('cost', !t2Locked);
+    this.upgrade.n.classList.toggle('lock', t2Locked);
     this.upgrade.el.classList.toggle('empty', t2Locked || !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < t2.cost);
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
