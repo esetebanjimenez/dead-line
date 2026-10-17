@@ -141,7 +141,7 @@ function holdX(w: World, kind: string): number {
   const base = w.data.config.world.wallX - (def.holdOffset ?? 0);
   const taken = new Set<number>();
   for (const e of w.entities) if (!e.dead && e.kind === kind) taken.add(Math.round(e.x));
-  const gap = w.data.config.feel.unitSpacing;
+  const gap = def.cost !== undefined ? def.width + 8 : w.data.config.feel.unitSpacing; // structures are wide: space them by their width
   for (let slot = 0; ; slot++) if (!taken.has(Math.round(base - slot * gap))) return base - slot * gap;
 }
 
@@ -234,15 +234,30 @@ export function skipPause(w: World): boolean {
 
 export type BuildResult = 'ok' | 'no-scrap' | 'built' | 'game-over' | 'entity-cap';
 
-/** Player action: build a Scrap structure (the Tower). One slot: refused while one is alive. */
+/** Slots a costed structure can occupy at once: its own purchase plus the configured extra slots. */
+export function structureSlots(w: World): number {
+  return 1 + w.data.config.world.towerExtraSlotCosts.length;
+}
+
+/** Scrap price of the next slot of this structure, or null when every slot is built. Slot 1 costs the unit's own cost. */
+export function nextStructureCost(w: World, kind: string): number | null {
+  const def = unitDef(w, kind);
+  if (def.cost === undefined) return null;
+  const alive = w.entities.filter((e) => !e.dead && e.kind === kind).length;
+  if (alive >= structureSlots(w)) return null;
+  return alive === 0 ? def.cost : w.data.config.world.towerExtraSlotCosts[alive - 1];
+}
+
+/** Player action: build a Scrap structure (the Tower). Slots are capped (see towerExtraSlotCosts); each slot has its own price. */
 export function buildStructure(w: World, kind: string): BuildResult {
   if (w.status !== 'playing') return 'game-over';
   const def = unitDef(w, kind);
   if (def.cost === undefined) return 'game-over';
-  if (w.entities.some((e) => !e.dead && e.kind === kind)) return 'built';
-  if (w.scrap < def.cost) return 'no-scrap';
+  const cost = nextStructureCost(w, kind);
+  if (cost === null) return 'built';
+  if (w.scrap < cost) return 'no-scrap';
   if (!spawn(w, kind, holdX(w, kind))) return 'entity-cap';
-  w.scrap -= def.cost;
+  w.scrap -= cost;
   return 'ok';
 }
 

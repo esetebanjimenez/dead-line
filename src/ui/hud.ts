@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { tryDeploy, repairWall, buildStructure, skipPause, upgradeWall, reinforce } from '../sim';
+import { nextStructureCost, tryDeploy, repairWall, buildStructure, skipPause, upgradeWall, reinforce } from '../sim';
 import { onPress } from '../input/pointer';
 import { keyToSlot } from './keys';
 
@@ -9,7 +9,7 @@ export class Hud {
   private endEl = document.getElementById('end')!;
   private lastWave = -1;
   private skip!: { el: HTMLButtonElement; n: HTMLElement };
-  private tower?: { el: HTMLButtonElement; id: string; cost: number };
+  private tower?: { el: HTMLButtonElement; n: HTMLElement; id: string };
   private upgrade!: { el: HTMLButtonElement; n: HTMLElement };
   private reinforceBtn!: { el: HTMLButtonElement; fill: HTMLElement };
   private disabled = new Set<string>(); // slot ids whose button is dimmed: clicks and hotkeys are ignored
@@ -64,7 +64,7 @@ export class Hud {
       onPress(tb, build);
       slotActions.set(tw.id, build);
       hud.appendChild(tb);
-      this.tower = { el: tb, id: tw.id, cost: tw.cost! };
+      this.tower = { el: tb, n: tb.querySelector('.n') as HTMLElement, id: tw.id };
     }
     const rf = w.data.config.world.reinforce;
     const rb = document.createElement('button');
@@ -136,8 +136,11 @@ export class Hud {
     }
     if (this.tower) {
       const t = this.tower;
-      const built = w.entities.some((e) => !e.dead && e.kind === t.id);
-      this.tower.el.classList.toggle('empty', built || w.scrap < t.cost);
+      const next = nextStructureCost(w, t.id); // null = every slot built
+      this.tower.n.textContent = next === null ? 'Max' : String(next);
+      this.tower.n.classList.toggle('cost', next !== null);
+      this.tower.n.classList.toggle('lock', next === null);
+      this.tower.el.classList.toggle('empty', next === null || w.scrap < next);
     }
     {
       const rf = w.data.config.world.reinforce;

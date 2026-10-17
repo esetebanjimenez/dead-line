@@ -14,6 +14,7 @@ import {
   skipPause,
   spawn,
   buildStructure,
+  nextStructureCost,
   step,
   tryDeploy,
   TICK_DT,
@@ -206,18 +207,51 @@ describe('wall repair (M2)', () => {
   });
 });
 
-describe('tower (M2)', () => {
-  it('costs 60 Scrap, allows one at a time, and is not a deployable charge unit', () => {
+describe('tower (M2, M4 slots)', () => {
+  it('slot 1 costs 60 Scrap and the Tower is not a deployable charge unit', () => {
     const w = createWorld(gameData);
     expect(buildStructure(w, 'tower')).toBe('no-scrap');
     w.scrap = 130;
     expect(buildStructure(w, 'tower')).toBe('ok');
     expect(w.scrap).toBe(70);
-    expect(buildStructure(w, 'tower')).toBe('built');
     expect(w.charges['tower']).toBeUndefined();
     expect(livingPlayerUnits(w)).toBe(0);
     const t = w.entities.find((e) => e.kind === 'tower')!;
     expect(t.x).toBeLessThan(gameData.config.world.wallX);
+  });
+  it('slot 2 costs the configured extra price, then the cap is reached', () => {
+    const extra = gameData.config.world.towerExtraSlotCosts;
+    expect(extra).toEqual([90]);
+    const w = createWorld(gameData);
+    w.scrap = 60 + extra[0] + 500;
+    expect(nextStructureCost(w, 'tower')).toBe(60);
+    expect(buildStructure(w, 'tower')).toBe('ok');
+    expect(nextStructureCost(w, 'tower')).toBe(extra[0]);
+    w.scrap = extra[0] - 1;
+    expect(buildStructure(w, 'tower')).toBe('no-scrap');
+    w.scrap = extra[0] + 5;
+    expect(buildStructure(w, 'tower')).toBe('ok');
+    expect(w.scrap).toBe(5);
+    expect(nextStructureCost(w, 'tower')).toBeNull();
+    w.scrap = 1000;
+    expect(buildStructure(w, 'tower')).toBe('built');
+    expect(w.scrap).toBe(1000);
+    const xs = w.entities.filter((e) => e.kind === 'tower').map((e) => e.x);
+    expect(xs.length).toBe(2);
+    expect(Math.abs(xs[0] - xs[1])).toBeGreaterThanOrEqual(gameData.units.find((u) => u.id === 'tower')!.width);
+  });
+  it('a destroyed tower frees its slot at the slot-appropriate price', () => {
+    const w = createWorld(gameData);
+    w.scrap = 1000;
+    buildStructure(w, 'tower');
+    buildStructure(w, 'tower');
+    w.entities.find((e) => e.kind === 'tower')!.dead = true;
+    expect(nextStructureCost(w, 'tower')).toBe(gameData.config.world.towerExtraSlotCosts[0]);
+  });
+  it('validates extra slot costs', () => {
+    const bad = structuredClone(gameData);
+    bad.config.world.towerExtraSlotCosts = [0];
+    expect(() => validateData(bad)).toThrow(/towerExtraSlotCosts/);
   });
 });
 

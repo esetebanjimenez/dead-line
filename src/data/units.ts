@@ -80,7 +80,6 @@ export const units: UnitDef[] = [
     speed: 0,
     knockback: 0,
     holdOffset: 30,
-    maxAlive: 1,
     cost: 60,
     color: 0x8a8f99,
     width: 30,

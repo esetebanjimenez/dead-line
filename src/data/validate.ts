@@ -37,6 +37,8 @@ export function validateData(d: GameData): void {
   const c = d.config.world;
   num(c.maxUnitsAlive, 'maxUnitsAlive', 1);
   num(c.globalDeployCooldown, 'globalDeployCooldown');
+  if (!Array.isArray(c.towerExtraSlotCosts)) errs.push('towerExtraSlotCosts must be an array');
+  else c.towerExtraSlotCosts.forEach((v, i) => num(v, `towerExtraSlotCosts[${i}]`, 1));
   num(c.reinforce?.cost, 'reinforce.cost', 1);
   num(c.reinforce?.cooldown, 'reinforce.cooldown');
   if (c.entityCap < 1) errs.push('entityCap must be >= 1');

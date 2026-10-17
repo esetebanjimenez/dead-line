@@ -58,6 +58,7 @@ export interface GameConfig {
     entityCap: number;
     maxUnitsAlive: number;
     globalDeployCooldown: number;
+    towerExtraSlotCosts: number[]; // M4 Module B: the Tower unit's own cost buys slot 1; each entry here buys the next slot (cap = 1 + length)
     reinforce: { cost: number; cooldown: number }; // M4 Module A: Scrap refills every deploy charge, only during a wave
     advanceSpeed: number; // player units march right from the gate at this speed until an enemy is in range
     leashX: number; // player units never advance past this x; they hold here and return to it after a fight
