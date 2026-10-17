@@ -144,3 +144,16 @@ describe('pressure', () => {
     expect(computePressure(w).level).toBeGreaterThan(0.5);
   });
 });
+
+describe('geometry', () => {
+  it('Riflemen at their hold slot can reach zombies stopped at the Shield line', () => {
+    const wallX = gameData.config.world.wallX;
+    const unit = (id: string) => gameData.units.find((u) => u.id === id)!;
+    const rifle = unit('rifleman');
+    const shield = unit('shield');
+    const zombie = unit('shambler');
+    const rifleReach = wallX - (rifle.holdOffset ?? 0) + rifle.range;
+    const zombieStop = wallX - (shield.holdOffset ?? 0) + zombie.range;
+    expect(rifleReach).toBeGreaterThanOrEqual(zombieStop);
+  });
+});

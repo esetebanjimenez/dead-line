@@ -28,15 +28,19 @@ function play(bot: Bot, seed: number) {
   const r = rng(seed);
   let minWall = 1;
   const waveWall: number[] = [];
+  const shieldDeaths: number[] = [0, 0, 0];
+  const dead = new Set<number>();
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);
     step(w);
+    for (const e of w.entities) if (e.kind === 'shield' && e.dead && !dead.has(e.id)) (dead.add(e.id), shieldDeaths[w.wave]++);
     if (w.phase === 'pause' && waveWall[w.wave] === undefined) waveWall[w.wave] = (100 * w.wallHp) / w.wallMaxHp;
     if (w.wave === gameData.waves.length - 1) minWall = Math.min(minWall, w.wallHp / w.wallMaxHp);
   }
   if (w.status === 'won') waveWall[w.wave] = (100 * w.wallHp) / w.wallMaxHp;
   return {
     waveWall,
+    shieldDeaths,
     status: w.status,
     wave: w.wave + 1,
     wallPct: Math.round((100 * w.wallHp) / w.wallMaxHp),
@@ -62,7 +66,9 @@ for (const [name, bot] of [
   for (let k = 0; k < gameData.waves.length; k++) {
     const reached = res.filter((x) => x.waveWall[k] !== undefined);
     const avg = reached.length ? reached.reduce((a, x) => a + x.waveWall[k], 0) / reached.length : 0;
-    console.log(`   wave ${k + 1}: cleared=${((100 * reached.length) / N).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}%`);
+    console.log(
+      `   wave ${k + 1}: cleared=${((100 * reached.length) / N).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}% shieldDeaths=${(res.reduce((a, x) => a + x.shieldDeaths[k], 0) / N).toFixed(1)}`,
+    );
   }
 }
 
