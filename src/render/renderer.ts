@@ -29,6 +29,10 @@ export class Renderer {
       shield: ['idle', 'attack', 'death'],
       shambler: ['idle', 'attack', 'death'],
       sniper: ['idle', 'attack', 'death'],
+      runner: ['idle', 'attack', 'death'],
+      brute: ['idle', 'attack', 'death'],
+      spitter: ['idle', 'attack', 'death'],
+      shambler2: ['idle', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
     for (const [k, anims] of Object.entries(kinds))
@@ -40,6 +44,11 @@ export class Renderer {
           /* missing art falls back to the placeholder box */
         }
       }
+  }
+
+  /** Art key for an entity: Shamblers alternate between two skins by id. */
+  private artKind(e: Entity): string {
+    return e.kind === 'shambler' && e.id % 2 === 1 && this.tex.has('shambler2_t1_idle_00') ? 'shambler2' : e.kind;
   }
 
   private texFor(kind: string, pose: string): Texture | undefined {
@@ -98,7 +107,7 @@ export class Renderer {
     v.body.clear();
     v.body.visible = true;
     v.sprite.visible = false;
-    if (this.texFor(e.kind, 'idle')) {
+    if (this.texFor(this.artKind(e), 'idle')) {
       v.body.visible = false;
       v.sprite.visible = true;
       return;
@@ -140,7 +149,7 @@ export class Renderer {
       const face = e.team === 'zombie' ? -1 : 1;
       v.root.scale.set(p.scale * face, p.scale);
       if (v.sprite.visible) {
-        const t = this.texFor(e.kind, poseOf(e));
+        const t = this.texFor(this.artKind(e), poseOf(e));
         if (t) v.sprite.texture = t;
         const bob = e.def.speed > 0 && !e.dead ? Math.sin(w.time * 9 + e.id) * 2 : 0;
         v.sprite.y = bob;
@@ -150,7 +159,7 @@ export class Renderer {
       v.bar.clear();
       if (!e.dead && e.hp < e.maxHp) {
         const bw = Math.max(20, e.def.width);
-        const by = v.sprite.visible ? -118 : -e.def.height - 9;
+        const by = v.sprite.visible ? -(v.sprite.texture.height - 8) : -e.def.height - 9;
         v.bar.rect(-bw / 2, by, bw, 4).fill(0x000000);
         v.bar.rect(-bw / 2, by, bw * Math.max(0, e.hp / e.maxHp), 4).fill(e.team === 'player' ? 0x6bd36b : 0xd8343a);
       }
