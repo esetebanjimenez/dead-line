@@ -12,15 +12,11 @@ type Bot = (w: World, r: () => number) => void;
 const spam: Bot = (w, r) => {
   if (r() < 0.5) deploy(w, r() < 0.5 ? 'rifleman' : 'shield');
 };
-// Smart (Shield-front): 2 Shield troopers first, then Riflemen. The last Shield charge is held until the wall or a Shield is below 50% HP.
+// Smart (Designer's Shield-front rules v2): Shield whenever ready and fewer than 3 alive; Rifleman whenever ready once a Shield is alive. Never hold charges.
 const smart: Bot = (w) => {
-  const shields = w.entities.filter((e) => e.kind === 'shield' && !e.dead);
-  if (shields.length < 2) {
-    if (deploy(w, 'shield')) return;
-  }
-  if (deploy(w, 'rifleman')) return;
-  const hurt = w.wallHp / w.wallMaxHp < 0.5 || shields.some((e) => e.hp / e.maxHp < 0.5);
-  if (shields.length >= 2 && (hurt || w.charges['shield'].count > 1)) deploy(w, 'shield');
+  const shields = w.entities.filter((e) => e.kind === 'shield' && !e.dead).length;
+  if (shields < 3) deploy(w, 'shield');
+  if (shields >= 1) deploy(w, 'rifleman');
 };
 
 function play(bot: Bot, seed: number) {

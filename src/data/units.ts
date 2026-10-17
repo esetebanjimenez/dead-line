@@ -26,7 +26,7 @@ export const units: UnitDef[] = [
     id: 'shield',
     team: 'player',
     name: 'Shield trooper',
-    hp: 140,
+    hp: 160,
     dps: 5,
     range: 40,
     attackInterval: 1.0,
@@ -35,7 +35,7 @@ export const units: UnitDef[] = [
     knockback: 0,
     holdOffset: -40, // frontline: 40px in front of the wall, toward the zombies
     maxCharges: 3,
-    chargeRefill: 14,
+    chargeRefill: 11,
     deployCooldown: 1.0,
     color: 0x7c8fa3,
     width: 26,
