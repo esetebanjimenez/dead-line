@@ -14,7 +14,7 @@ export const config: GameConfig = {
     spawnPlayerX: 80,
     entityCap: 150,
     advanceSpeed: 90,
-    leashX: 520,
+    leashX: 420,
     exitStagger: 0.15,
     exitDelay: { rifleman: 0.3 },
     maxUnitsAlive: 8,
