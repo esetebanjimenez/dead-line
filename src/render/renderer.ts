@@ -28,6 +28,7 @@ export class Renderer {
     const kinds: Record<string, string[]> = {
       rifleman: ['idle', 'walkA', 'walkB', 'attack', 'hit', 'death'],
       shield: ['idle', 'attack', 'death'],
+      tower: ['idle'],
       sniper: ['idle', 'attack', 'death'],
       firearcher: ['idle', 'attack', 'death'],
       cavalry: ['idle', 'attack', 'death'],

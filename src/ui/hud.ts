@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { tryDeploy, repairWall } from '../sim';
+import { tryDeploy, repairWall, buildStructure } from '../sim';
 import { onPress } from '../input/pointer';
 
 export class Hud {
@@ -7,6 +7,7 @@ export class Hud {
   private bannerEl = document.getElementById('banner')!;
   private endEl = document.getElementById('end')!;
   private lastWave = -1;
+  private tower?: { el: HTMLButtonElement; id: string; cost: number };
   private repair!: { el: HTMLButtonElement; n: HTMLElement };
 
   constructor(
@@ -16,7 +17,7 @@ export class Hud {
     const hud = document.getElementById('hud')!;
     const w = getWorld();
     let key = 1;
-    for (const u of w.data.units.filter((x) => x.team === 'player')) {
+    for (const u of w.data.units.filter((x) => x.team === 'player' && x.cost === undefined)) {
       const el = document.createElement('button');
       el.className = 'deploy';
       el.innerHTML = `<div class="fill"></div><span>${u.name}</span><span class="n"></span><span style="font-size:10px">[${key}]</span>`;
@@ -36,6 +37,25 @@ export class Hud {
       key++;
       hud.appendChild(el);
       this.buttons.set(u.id, { el, n, fill });
+    }
+    const tw = w.data.units.find((x) => x.cost !== undefined);
+    if (tw) {
+      const tb = document.createElement('button');
+      tb.className = 'deploy';
+      tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span style="font-size:10px">[${key}]</span>`;
+      const build = () => {
+        if (buildStructure(this.getWorld(), tw.id) !== 'ok') {
+          tb.classList.remove('shake');
+          void tb.offsetWidth;
+          tb.classList.add('shake');
+        }
+      };
+      onPress(tb, build);
+      window.addEventListener('keydown', (e) => {
+        if (e.key === String(key)) build();
+      });
+      hud.appendChild(tb);
+      this.tower = { el: tb, id: tw.id, cost: tw.cost! };
     }
     const rep = document.createElement('button');
     rep.className = 'deploy';
@@ -59,6 +79,11 @@ export class Hud {
       b.n.textContent = `${c.count}/${u.maxCharges}`;
       b.el.classList.toggle('empty', c.count === 0);
       b.fill.style.setProperty('--p', c.count >= u.maxCharges! ? '1' : String(c.timer / u.chargeRefill!));
+    }
+    if (this.tower) {
+      const t = this.tower;
+      const built = w.entities.some((e) => !e.dead && e.kind === t.id);
+      this.tower.el.classList.toggle('empty', built || w.scrap < t.cost);
     }
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);

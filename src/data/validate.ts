@@ -13,7 +13,10 @@ export function validateData(d: GameData): void {
     for (const k of ['hp', 'dps', 'range', 'attackInterval', 'windup', 'speed', 'knockback'] as const) num(u[k], `${u.id}.${k}`);
     if (u.hp <= 0) errs.push(`${u.id}.hp must be > 0`);
     if (u.attackInterval <= 0) errs.push(`${u.id}.attackInterval must be > 0`);
-    if (u.team === 'player') {
+    if (u.team === 'player' && u.cost !== undefined) {
+      num(u.cost, `${u.id}.cost`, 1);
+      num(u.holdOffset, `${u.id}.holdOffset`, -200);
+    } else if (u.team === 'player') {
       num(u.maxCharges, `${u.id}.maxCharges`, 1);
       num(u.chargeRefill, `${u.id}.chargeRefill`, 0.1);
       num(u.holdOffset, `${u.id}.holdOffset`, -200); // negative = frontline, in front of the wall

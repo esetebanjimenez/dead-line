@@ -198,3 +198,18 @@ describe('wall repair (M2)', () => {
     expect(w.wallHp).toBe(200);
   });
 });
+
+describe('tower (M2)', () => {
+  it('costs 60 Scrap, allows one at a time, and is not a deployable charge unit', () => {
+    const w = createWorld(gameData);
+    expect(buildStructure(w, 'tower')).toBe('no-scrap');
+    w.scrap = 130;
+    expect(buildStructure(w, 'tower')).toBe('ok');
+    expect(w.scrap).toBe(70);
+    expect(buildStructure(w, 'tower')).toBe('built');
+    expect(w.charges['tower']).toBeUndefined();
+    expect(livingPlayerUnits(w)).toBe(0);
+    const t = w.entities.find((e) => e.kind === 'tower')!;
+    expect(t.x).toBeLessThan(gameData.config.world.wallX);
+  });
+});

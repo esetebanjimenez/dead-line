@@ -55,7 +55,7 @@ export interface World {
 
 export function createWorld(data: GameData): World {
   const charges: Record<string, ChargeState> = {};
-  for (const u of data.units) if (u.team === 'player') charges[u.id] = { count: u.maxCharges!, timer: 0 };
+  for (const u of data.units) if (u.team === 'player' && u.cost === undefined) charges[u.id] = { count: u.maxCharges!, timer: 0 };
   return {
     data,
     time: 0,
@@ -129,7 +129,7 @@ function holdX(w: World, kind: string): number {
 
 export function livingPlayerUnits(w: World): number {
   let n = 0;
-  for (const e of w.entities) if (!e.dead && e.team === 'player') n++;
+  for (const e of w.entities) if (!e.dead && e.team === 'player' && e.def.cost === undefined) n++;
   return n;
 }
 
@@ -161,6 +161,20 @@ export function repairWall(w: World): number {
   w.wallHp += hp;
   w.scrap -= Math.ceil(hp / rate);
   return hp;
+}
+
+export type BuildResult = 'ok' | 'no-scrap' | 'built' | 'game-over' | 'entity-cap';
+
+/** Player action: build a Scrap structure (the Tower). One slot: refused while one is alive. */
+export function buildStructure(w: World, kind: string): BuildResult {
+  if (w.status !== 'playing') return 'game-over';
+  const def = unitDef(w, kind);
+  if (def.cost === undefined) return 'game-over';
+  if (w.entities.some((e) => !e.dead && e.kind === kind)) return 'built';
+  if (w.scrap < def.cost) return 'no-scrap';
+  if (!spawn(w, kind, holdX(w, kind))) return 'entity-cap';
+  w.scrap -= def.cost;
+  return 'ok';
 }
 
 export function deploy(w: World, kind: string): boolean {

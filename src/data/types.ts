@@ -16,6 +16,7 @@ export interface UnitDef {
   holdOffset?: number; // player only: stops this far behind the wall
   deployCooldown?: number; // player only: seconds before this button can be used again
   reward?: number; // zombie only: Scrap dropped on death
+  cost?: number; // player only: Scrap price. A unit with a cost is a one-off structure (no charges, built with buildStructure)
   maxCharges?: number; // player only
   chargeRefill?: number; // player only: seconds per charge
   color: number; // placeholder sprite colour
