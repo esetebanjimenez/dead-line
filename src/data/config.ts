@@ -8,6 +8,7 @@ export const config: GameConfig = {
     baseX: 40,
     wallX: 260,
     wallHp: 400,
+    towerTier2: { cost: 150, unlockWave: 5, damageMult: 1.5, rangeBonus: 30 },
     wallTier2: { hp: 650, cost: 350, unlockWave: 4, repairCostMult: 1.5, upgradeHealFraction: 0.5 },
     repairHpPerScrap: 4,
     baseHp: 500,

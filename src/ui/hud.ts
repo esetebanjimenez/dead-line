@@ -1,5 +1,15 @@
 import type { World } from '../sim';
-import { nextStructureCost, tryDeploy, repairWall, buildStructure, skipPause, upgradeWall, reinforce, reinforceFull } from '../sim';
+import {
+  nextStructureCost,
+  tryDeploy,
+  repairWall,
+  buildStructure,
+  skipPause,
+  upgradeWall,
+  upgradeTower,
+  reinforce,
+  reinforceFull,
+} from '../sim';
 import { onPress } from '../input/pointer';
 import { keyToSlot } from './keys';
 
@@ -10,6 +20,7 @@ export class Hud {
   private lastWave = -1;
   private skip!: { el: HTMLButtonElement; n: HTMLElement };
   private tower?: { el: HTMLButtonElement; n: HTMLElement; id: string };
+  private towerUp!: { el: HTMLButtonElement; n: HTMLElement };
   private upgrade!: { el: HTMLButtonElement; n: HTMLElement };
   private reinforceBtn!: { el: HTMLButtonElement; fill: HTMLElement; label: HTMLElement };
   private disabled = new Set<string>(); // slot ids whose button is dimmed: clicks and hotkeys are ignored
@@ -122,6 +133,22 @@ export class Hud {
     });
     hud.appendChild(up);
     this.upgrade = { el: up, n: up.querySelector('.n') as HTMLElement };
+    const tu = document.createElement('button');
+    tu.className = 'deploy';
+    tu.innerHTML = `<span>Tower tier 2</span><span class="n cost">${w.data.config.world.towerTier2.cost}</span><span data-k style="font-size:10px">[T]</span>`;
+    const doTowerUpgrade = () => {
+      if (upgradeTower(this.getWorld()) !== 'ok') {
+        tu.classList.remove('shake');
+        void tu.offsetWidth;
+        tu.classList.add('shake');
+      }
+    };
+    onPress(tu, doTowerUpgrade);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 't' || e.key === 'T') doTowerUpgrade();
+    });
+    hud.appendChild(tu);
+    this.towerUp = { el: tu, n: tu.querySelector('.n') as HTMLElement };
     onPress(document.getElementById('restart')!, onRestart);
   }
 
@@ -162,6 +189,13 @@ export class Hud {
     this.upgrade.n.classList.toggle('cost', !t2Locked);
     this.upgrade.n.classList.toggle('lock', t2Locked);
     this.upgrade.el.classList.toggle('empty', t2Locked || !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < t2.cost);
+    const tt2 = w.data.config.world.towerTier2;
+    const ttLocked = w.wave < tt2.unlockWave;
+    this.towerUp.el.style.display = w.towerTier === 1 ? '' : 'none';
+    this.towerUp.n.textContent = ttLocked ? `Wave ${tt2.unlockWave}` : `${tt2.cost}`;
+    this.towerUp.n.classList.toggle('cost', !ttLocked);
+    this.towerUp.n.classList.toggle('lock', ttLocked);
+    this.towerUp.el.classList.toggle('empty', ttLocked || !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < tt2.cost);
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
     document.getElementById('scrap')!.textContent = `${Math.floor(w.scrap)}`;

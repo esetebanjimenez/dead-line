@@ -41,6 +41,7 @@ export class Renderer {
   private lw = CANVAS_W;
   private lh = CANVAS_H;
   private tex = new Map<string, Texture>();
+  private towerTier: 1 | 2 = 1; // render-only copy of w.towerTier, set each frame; picks the tier 2 Tower art
 
   private async loadArt(): Promise<void> {
     const kinds: Record<string, string[]> = {
@@ -56,6 +57,11 @@ export class Renderer {
       ram: ['idle', 'walkA', 'walkB', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
+    try {
+      this.tex.set('tower_t2_idle_00', await Assets.load<Texture>(`${base}tower_t2_idle_00.png`));
+    } catch {
+      /* tier 2 Tower falls back to the tier 1 art */
+    }
     try {
       this.tex.set('env', await Assets.load<Texture>(`${base}env_kingdom_bg.png`));
     } catch {
@@ -97,6 +103,10 @@ export class Renderer {
   }
 
   private texFor(kind: string, pose: string): Texture | undefined {
+    if (kind === 'tower' && this.towerTier === 2) {
+      const t2 = this.tex.get('tower_t2_idle_00');
+      if (t2) return t2;
+    }
     return this.tex.get(`${kind}_t1_${pose}_00`) ?? this.tex.get(`${kind}_t1_idle_00`);
   }
 
@@ -195,6 +205,7 @@ export class Renderer {
   render(w: World, alpha: number): void {
     const gy = 520;
     this.wallHit = 0;
+    this.towerTier = w.towerTier;
     for (const v of this.views.values()) v.used = false;
     const list = w.stress.length ? w.entities.concat(w.stress) : w.entities;
     for (const e of list) {

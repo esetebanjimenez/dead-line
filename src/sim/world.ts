@@ -48,6 +48,7 @@ export interface World {
   wallHp: number;
   wallMaxHp: number;
   wallTier: 1 | 2;
+  towerTier: 1 | 2;
   baseHp: number;
   baseMaxHp: number;
   charges: Record<string, ChargeState>;
@@ -80,6 +81,7 @@ export function createWorld(data: GameData): World {
     wallHp: data.config.world.wallHp,
     wallMaxHp: data.config.world.wallHp,
     wallTier: 1,
+    towerTier: 1,
     baseHp: data.config.world.baseHp,
     baseMaxHp: data.config.world.baseHp,
     charges,
@@ -205,6 +207,18 @@ export function upgradeWall(w: World): 'ok' | 'locked' | 'owned' | 'no-scrap' | 
   w.wallTier = 2;
   w.wallMaxHp = t2.hp;
   w.wallHp = Math.min(t2.hp, w.wallHp + t2.hp * t2.upgradeHealFraction);
+  return 'ok';
+}
+
+/** Player action (M4 Module C): upgrade every Tower (existing and future) to tier 2 between waves, once, after the unlock wave. */
+export function upgradeTower(w: World): 'ok' | 'locked' | 'owned' | 'no-scrap' | 'bad-phase' {
+  const t2 = w.data.config.world.towerTier2;
+  if (w.towerTier === 2) return 'owned';
+  if (w.status !== 'playing' || (w.phase !== 'pause' && w.phase !== 'banner')) return 'bad-phase';
+  if (w.wave < t2.unlockWave) return 'locked';
+  if (w.scrap < t2.cost) return 'no-scrap';
+  w.scrap -= t2.cost;
+  w.towerTier = 2;
   return 'ok';
 }
 

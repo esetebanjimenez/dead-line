@@ -1,6 +1,6 @@
 // Headless balance runner: `pnpm sim`. Runs bot strategies many times with seeded randomness (bots only; the sim is deterministic).
 import { gameData } from '../src/data';
-import { buildStructure, createWorld, deploy, reinforce, repairWall, step, upgradeWall, type World } from '../src/sim';
+import { buildStructure, createWorld, deploy, reinforce, repairWall, step, upgradeTower, upgradeWall, type World } from '../src/sim';
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -33,6 +33,8 @@ const smartSniper: Bot = (w, r) => {
 // Smart + Sniper + wall tier 2: buys the wall upgrade as soon as it can afford it after wave 3 (the upgrade also fully repairs).
 const smartT2: Bot = (w, r) => {
   upgradeWall(w);
+  // M4 Module C: once the wall is tier 2 and a Tower stands, buy Tower tier 2 whenever affordable (the Tower upgrade applies to every Tower).
+  if (w.wallTier === 2 && w.entities.some((e) => e.kind === 'tower' && !e.dead)) upgradeTower(w);
   // M4 Module A: Reinforce when running low (<= 2 ready charges across the units it can use) and not saving for the wall upgrade.
   if (w.phase === 'fighting' && !(w.wallTier !== 2 && w.wave >= gameData.config.world.wallTier2.unlockWave)) {
     let ready = 0;

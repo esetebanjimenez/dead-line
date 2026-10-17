@@ -4,7 +4,7 @@ type Target = { kind: 'entity'; e: Entity } | { kind: 'wall' } | { kind: 'base' 
 
 function findTarget(w: World, e: Entity): Target | null {
   const cfg = w.data.config.world;
-  const r = e.def.range;
+  const r = e.def.range + (e.kind === 'tower' && w.towerTier === 2 ? w.data.config.world.towerTier2.rangeBonus : 0);
   if (e.team === 'player') {
     let best: Entity | null = null;
     for (const o of w.entities) {
@@ -48,7 +48,10 @@ function applyHit(w: World, attacker: Entity, t: Target): void {
     w.puddles.push({ x, halfWidth: pd.halfWidth, dps: pd.dps, ttl: pd.duration, age: 0 });
     return;
   }
-  const dmg = attacker.def.dps * attacker.def.attackInterval;
+  const dmg =
+    attacker.def.dps *
+    attacker.def.attackInterval *
+    (attacker.kind === 'tower' && w.towerTier === 2 ? w.data.config.world.towerTier2.damageMult : 1);
   if (t.kind === 'wall') {
     const before = w.wallHp;
     w.wallShake = w.data.config.feel.wallShakeTime;

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { gameData, validateData } from '../src/data';
 import {
   upgradeWall,
+  upgradeTower,
   reinforce,
   reinforceFull,
   aliveCount,
@@ -589,5 +590,58 @@ describe('frameForRamAttack', () => {
     expect(frameForRamAttack(0.05, 0, 1).frame).toBe('attack');
     expect(frameForRamAttack(-1, 1, 1)).toEqual({ frame: 'attack', since: 0 });
     expect(frameForRamAttack(-1, 0.5, 1).frame).toBe('idle');
+  });
+});
+
+describe('tower tier 2 (M4 Module C)', () => {
+  const setup = () => {
+    const w = createWorld(gameData);
+    w.phase = 'pause';
+    w.scrap = 1000;
+    w.wave = 5;
+    return w;
+  };
+  it('is locked until wave 5, costs 150 once, and refuses mid-wave or without Scrap', () => {
+    const w = setup();
+    w.wave = 4;
+    expect(upgradeTower(w)).toBe('locked');
+    expect(w.towerTier).toBe(1);
+    expect(w.scrap).toBe(1000);
+    w.wave = 5;
+    w.phase = 'fighting';
+    expect(upgradeTower(w)).toBe('bad-phase');
+    w.phase = 'pause';
+    w.scrap = 149;
+    expect(upgradeTower(w)).toBe('no-scrap');
+    w.scrap = 400;
+    expect(upgradeTower(w)).toBe('ok');
+    expect(w.scrap).toBe(250);
+    expect(w.towerTier).toBe(2);
+    expect(upgradeTower(w)).toBe('owned');
+    expect(w.scrap).toBe(250);
+  });
+  it('adds +30 range and +50% damage, to an existing Tower and one built afterwards', () => {
+    const hitsAt = (tier: 1 | 2, dist: number) => {
+      const w = setup();
+      w.phase = 'fighting';
+      w.towerTier = tier;
+      buildStructure(w, 'tower');
+      const tw = w.entities.find((e) => e.kind === 'tower')!;
+      const z = spawn(w, 'shambler', tw.x + dist)!;
+      z.def = { ...z.def, speed: 0 };
+      const hp0 = z.hp;
+      run(w, 0.5);
+      return hp0 - z.hp;
+    };
+    expect(hitsAt(1, 220)).toBe(0); // out of the tier 1 range 200
+    expect(hitsAt(2, 220)).toBeGreaterThan(0); // inside 230
+    expect(hitsAt(2, 235)).toBe(0);
+    expect(hitsAt(2, 100)).toBeCloseTo(hitsAt(1, 100) * 1.5, 5);
+    // existing Tower picks it up on purchase
+    const w = setup();
+    buildStructure(w, 'tower');
+    upgradeTower(w);
+    expect(w.towerTier).toBe(2);
+    expect(w.entities.filter((e) => e.kind === 'tower').length).toBe(1);
   });
 });
