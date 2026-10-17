@@ -28,13 +28,13 @@ export class Renderer {
   private async loadArt(): Promise<void> {
     const kinds: Record<string, string[]> = {
       rifleman: ['idle', 'walkA', 'walkB', 'attack', 'hit', 'death'],
-      shield: ['idle', 'attack', 'death'],
+      shield: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       tower: ['idle'],
       sniper: ['idle', 'attack', 'death'],
       firearcher: ['idle', 'attack', 'death'],
       cavalry: ['idle', 'attack', 'death'],
       hammerknight: ['idle', 'attack', 'death'],
-      footman: ['idle', 'attack', 'death'],
+      footman: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       footman2: ['idle', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
@@ -196,7 +196,7 @@ export class Renderer {
       const face = e.team === 'zombie' ? -1 : 1;
       v.root.scale.set(p.scale * face, p.scale);
       if (v.sprite.visible) {
-        const t = this.texFor(this.artKind(e), poseOf(e));
+        const t = this.texFor(this.artKind(e), poseOf(e, w.time));
         if (t) v.sprite.texture = t;
         const bob = (e.def.speed > 0 || e.prevX !== e.x) && !e.dead ? Math.sin(w.time * 9 + e.id) * 2 : 0;
         v.sprite.y = bob;

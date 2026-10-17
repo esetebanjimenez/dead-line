@@ -33,9 +33,14 @@ export function project(depth: number, x: number): { x: number; y: number; scale
 }
 
 /** Sprite pose for an entity; falls back to idle when a pose has no art. */
-export function poseOf(e: { dead: boolean; windupLeft: number; hitFlash: number; def: { speed: number } }): string {
+export function poseOf(
+  e: { dead: boolean; windupLeft: number; hitFlash: number; def: { speed: number }; id?: number; x?: number; prevX?: number },
+  time = 0,
+): string {
   if (e.dead) return 'death';
   if (e.windupLeft >= 0) return 'attack';
+  if (e.x !== undefined && e.prevX !== undefined && e.x !== e.prevX)
+    return Math.floor(time / 0.18 + (e.id ?? 0)) % 2 === 0 ? 'walkA' : 'walkB'; // 2-frame cycle while moving
   if (e.def.speed > 0) return 'walk';
   return 'idle';
 }
