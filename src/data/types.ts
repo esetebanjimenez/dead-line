@@ -42,6 +42,7 @@ export interface GameConfig {
     baseX: number;
     wallX: number;
     wallHp: number;
+    repairHpPerScrap: number; // wall repair rate between waves (M2: 1 Scrap per 4 HP)
     baseHp: number;
     spawnX: number;
     spawnPlayerX: number;

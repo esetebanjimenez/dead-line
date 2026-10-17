@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { gameData, validateData } from '../src/data';
-import { aliveCount, computePressure, createWorld, deploy, livingPlayerUnits, step, tryDeploy, TICK_DT, type World } from '../src/sim';
+import {
+  aliveCount,
+  computePressure,
+  createWorld,
+  deploy,
+  livingPlayerUnits,
+  repairWall,
+  step,
+  tryDeploy,
+  TICK_DT,
+  type World,
+} from '../src/sim';
 
 const run = (w: World, seconds: number, each?: () => void) => {
   for (let i = 0; i < seconds / TICK_DT && w.status === 'playing'; i++) {
@@ -158,5 +169,32 @@ describe('geometry', () => {
     // Reach must cover the Shield line, but not by so much that Riflemen no longer need it.
     expect(margin).toBeGreaterThanOrEqual(0);
     expect(margin).toBeLessThanOrEqual(25);
+  });
+});
+
+describe('wall repair (M2)', () => {
+  it('costs 1 Scrap per 4 HP, only between waves, and the wall no longer restores for free', () => {
+    const w = createWorld(gameData);
+    w.phase = 'fighting';
+    w.wallHp = 100;
+    w.scrap = 30;
+    expect(repairWall(w)).toBe(0);
+    w.phase = 'pause';
+    expect(repairWall(w)).toBe(120);
+    expect(w.wallHp).toBe(220);
+    expect(w.scrap).toBe(0);
+    w.scrap = 1000;
+    repairWall(w);
+    expect(w.wallHp).toBe(w.wallMaxHp);
+    expect(w.scrap).toBe(1000 - 45);
+  });
+  it('does not auto-restore the wall when the next wave starts', () => {
+    const w = createWorld(gameData);
+    w.wave = 0;
+    w.phase = 'pause';
+    w.phaseTimer = 0;
+    w.wallHp = 200;
+    step(w);
+    expect(w.wallHp).toBe(200);
   });
 });

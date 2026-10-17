@@ -1,6 +1,6 @@
 // Headless balance runner: `pnpm sim`. Runs bot strategies many times with seeded randomness (bots only; the sim is deterministic).
 import { gameData } from '../src/data';
-import { createWorld, deploy, step, type World } from '../src/sim';
+import { createWorld, deploy, repairWall, step, type World } from '../src/sim';
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -32,6 +32,8 @@ function play(bot: Bot, seed: number) {
   const dead = new Set<number>();
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);
+    // All bots spend Scrap on wall repair between waves (spam never repairs).
+    if (bot !== spam) repairWall(w);
     step(w);
     for (const e of w.entities)
       if (e.kind === 'shield' && e.dead && !dead.has(e.id)) {

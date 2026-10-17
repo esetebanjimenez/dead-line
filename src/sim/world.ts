@@ -151,6 +151,18 @@ export function tryDeploy(w: World, kind: string): DeployResult {
   return 'ok';
 }
 
+/** Between waves only (pause or banner). Spends Scrap at 1 per `repairHpPerScrap` HP, up to full HP. Returns HP restored. */
+export function repairWall(w: World): number {
+  if (w.status !== 'playing' || (w.phase !== 'pause' && w.phase !== 'banner')) return 0;
+  const rate = w.data.config.world.repairHpPerScrap;
+  const missing = w.wallMaxHp - w.wallHp;
+  const hp = Math.min(missing, Math.floor(w.scrap) * rate);
+  if (hp <= 0) return 0;
+  w.wallHp += hp;
+  w.scrap -= Math.ceil(hp / rate);
+  return hp;
+}
+
 export function deploy(w: World, kind: string): boolean {
   return tryDeploy(w, kind) === 'ok';
 }

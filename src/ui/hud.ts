@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { tryDeploy } from '../sim';
+import { tryDeploy, repairWall } from '../sim';
 import { onPress } from '../input/pointer';
 
 export class Hud {
@@ -7,6 +7,7 @@ export class Hud {
   private bannerEl = document.getElementById('banner')!;
   private endEl = document.getElementById('end')!;
   private lastWave = -1;
+  private repair!: { el: HTMLButtonElement; n: HTMLElement };
 
   constructor(
     private getWorld: () => World,
@@ -36,6 +37,17 @@ export class Hud {
       hud.appendChild(el);
       this.buttons.set(u.id, { el, n, fill });
     }
+    const rep = document.createElement('button');
+    rep.className = 'deploy';
+    rep.innerHTML = '<span>Repair</span><span class="n"></span><span style="font-size:10px">[R]</span>';
+    const repN = rep.querySelector('.n') as HTMLElement;
+    const doRepair = () => void repairWall(this.getWorld());
+    onPress(rep, doRepair);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'r' || e.key === 'R') doRepair();
+    });
+    hud.appendChild(rep);
+    this.repair = { el: rep, n: repN };
     onPress(document.getElementById('restart')!, onRestart);
   }
 
@@ -48,6 +60,8 @@ export class Hud {
       b.el.classList.toggle('empty', c.count === 0);
       b.fill.style.setProperty('--p', c.count >= u.maxCharges! ? '1' : String(c.timer / u.chargeRefill!));
     }
+    this.repair.n.textContent = `${Math.floor(w.scrap)}`;
+    this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
     document.getElementById('wave')!.textContent = `${w.wave + 1}/${w.data.waves.length}`;
     (document.getElementById('wallbar') as HTMLElement).style.width = `${(100 * w.wallHp) / w.wallMaxHp}%`;
     const bf = w.baseHp / w.baseMaxHp;
