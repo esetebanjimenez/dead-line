@@ -31,6 +31,7 @@ async function main(): Promise<void> {
       acc -= TICK_DT;
       steps++;
     }
+    if (steps === 5) acc = 0; // drop any backlog instead of spiralling after a long stall
     if (steps) perf.simMs = (performance.now() - t0) / steps;
     renderer.render(world, Math.min(1, acc / TICK_DT));
     hud.update(world);

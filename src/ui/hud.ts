@@ -50,7 +50,11 @@ export class Hud {
     }
     document.getElementById('wave')!.textContent = `${w.wave + 1}/${w.data.waves.length}`;
     (document.getElementById('wallbar') as HTMLElement).style.width = `${(100 * w.wallHp) / w.wallMaxHp}%`;
-    (document.getElementById('basebar') as HTMLElement).style.width = `${(100 * w.baseHp) / w.baseMaxHp}%`;
+    const bf = w.baseHp / w.baseMaxHp;
+    const baseBar = document.getElementById('basebar') as HTMLElement;
+    baseBar.style.width = `${100 * bf}%`;
+    // Red only means danger: green when healthy, amber when hurt, red below 33%.
+    baseBar.style.background = bf < 0.33 ? '#d8343a' : bf < 0.7 ? '#f0a020' : '#4fb04f';
     const showBanner = w.phase === 'banner' && w.status === 'playing';
     this.bannerEl.style.display = showBanner ? 'block' : 'none';
     if (showBanner && this.lastWave !== w.wave) {

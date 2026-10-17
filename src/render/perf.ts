@@ -8,6 +8,7 @@ export class PerfOverlay {
   private fps = 0;
   simMs = 0;
   constructor() {
+    if (new URLSearchParams(location.search).has('perf')) this.el.style.display = 'block'; // touch-friendly: add ?perf to the URL
     window.addEventListener('keydown', (e) => {
       if (e.key.toLowerCase() === 'p') this.el.style.display = this.el.style.display === 'block' ? 'none' : 'block';
     });

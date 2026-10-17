@@ -119,6 +119,22 @@ describe('combat', () => {
   });
 });
 
+describe('seeded replay', () => {
+  it('same seeded inputs always give the same outcome', () => {
+    const play = (seed: number) => {
+      let s = seed;
+      const rnd = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
+      const w = createWorld(gameData);
+      run(w, 120, () => {
+        if (rnd() < 0.3) deploy(w, rnd() < 0.5 ? 'rifleman' : 'shield');
+      });
+      return JSON.stringify([w.wallHp, w.baseHp, w.scrap, w.entities.map((e) => [e.id, e.kind, e.x, e.hp])]);
+    };
+    expect(play(7)).toBe(play(7));
+    expect(play(7)).not.toBe(play(8));
+  });
+});
+
 describe('pressure', () => {
   it('is calm with no zombies and urgent when one is at the wall', () => {
     const w = createWorld(gameData);
