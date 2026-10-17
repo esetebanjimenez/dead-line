@@ -13,7 +13,7 @@ export const DEFAULT_ART_META: ArtMeta = { scale: 1, anchorX: 0.5, shadowWidth: 
 export const ART_META: Record<string, ArtMeta> = {
   // Battering Ram, 312x208 frames drawn facing right. Sim x is the front of the log (range is measured from the log tip),
   // and the log tip is at pixel 310 of 312 in the idle frame. The wheel bottoms are on the canvas floor (anchor y = 1).
-  ram: { scale: 1, anchorX: 310 / 312, shadowWidth: 120, bodyOffsetX: -(310 - 181), barWidth: 90, bob: { amplitude: 3, speed: 7 } },
+  ram: { scale: 1, anchorX: 310 / 312, shadowWidth: 120, bodyOffsetX: -(310 - 181), barWidth: 90, bob: { amplitude: 5, speed: 7 } },
 };
 
 export function artMeta(kind: string): ArtMeta {
