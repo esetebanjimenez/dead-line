@@ -271,3 +271,31 @@ describe('wave pause (M2)', () => {
     expect(skipPause(w)).toBe(false);
   });
 });
+
+describe('gate walk-out (M2)', () => {
+  it('Shield leaves first, Rifleman 0.3s later, staggered 0.15s, marches at 90 and holds at the leash', () => {
+    const w = createWorld(gameData);
+    w.phase = 'done';
+    expect(deploy(w, 'shield')).toBe(true);
+    w.globalCd = 0;
+    expect(deploy(w, 'rifleman')).toBe(true);
+    const [s, r] = w.entities;
+    expect(s.wait).toBe(0);
+    expect(r.wait).toBeCloseTo(0.3, 5);
+    run(w, 0.2);
+    expect(s.x).toBeGreaterThan(gameData.config.world.spawnPlayerX);
+    expect(r.x).toBe(gameData.config.world.spawnPlayerX);
+    run(w, 10);
+    expect(s.x).toBe(gameData.config.world.leashX);
+    expect(r.x).toBe(gameData.config.world.leashX);
+  });
+  it('a waiting unit cannot be targeted', () => {
+    const w = createWorld(gameData);
+    w.phase = 'done';
+    const u = spawn(w, 'rifleman', 100)!;
+    u.wait = 5;
+    spawn(w, 'shambler', 110);
+    run(w, 1);
+    expect(u.hp).toBe(u.maxHp);
+  });
+});

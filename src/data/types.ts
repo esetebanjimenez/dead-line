@@ -53,6 +53,10 @@ export interface GameConfig {
     entityCap: number;
     maxUnitsAlive: number;
     globalDeployCooldown: number;
+    advanceSpeed: number; // player units march right from the gate at this speed until an enemy is in range
+    leashX: number; // player units never advance past this x; they hold here and return to it after a fight
+    exitStagger: number; // seconds between units leaving the gate
+    exitDelay: Record<string, number>; // extra seconds before a kind leaves the gate (so Shields lead the Riflemen)
   };
   feel: {
     hitFlash: number;

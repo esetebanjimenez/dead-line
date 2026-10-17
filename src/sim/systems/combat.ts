@@ -18,7 +18,7 @@ function findTarget(w: World, e: Entity): Target | null {
   const nearestUnit = (front: boolean): Entity | null => {
     let best: Entity | null = null;
     for (const o of w.entities) {
-      if (o.dead || o.team !== 'player' || o.x >= e.x) continue;
+      if (o.dead || o.team !== 'player' || (o.wait ?? 0) > 0 || o.x >= e.x) continue;
       if (o.x > cfg.wallX !== front || e.x - o.x > r) continue;
       if (!best || o.x > best.x) best = o;
     }
@@ -70,6 +70,10 @@ export function combatSystem(w: World, dt: number): void {
     if (e.dead) continue;
     e.cooldown = Math.max(0, e.cooldown - dt);
     e.hitFlash = Math.max(0, e.hitFlash - dt);
+    if ((e.wait ?? 0) > 0) {
+      e.wait! -= dt;
+      continue;
+    }
     const t = findTarget(w, e);
     if (e.windupLeft >= 0) {
       // Winding up: hold still, land the hit when the windup completes.
@@ -96,8 +100,12 @@ export function combatSystem(w: World, dt: number): void {
     }
     if (e.team === 'zombie') {
       e.x -= e.def.speed * speedMult * dt;
+    } else if (e.def.cost === undefined) {
+      // Player units march out of the gate until an enemy is in range, never past the leash (they walk back to it after a fight).
+      const cfg = w.data.config.world;
+      if (e.x < cfg.leashX) e.x = Math.min(cfg.leashX, e.x + cfg.advanceSpeed * dt);
+      else if (e.x > cfg.leashX) e.x = Math.max(cfg.leashX, e.x - cfg.advanceSpeed * dt);
     }
-    // Player units hold position (they spawn at their hold slot).
   }
 }
 

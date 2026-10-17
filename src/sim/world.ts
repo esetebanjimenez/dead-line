@@ -10,6 +10,8 @@ export interface Entity {
   hp: number;
   maxHp: number;
   cooldown: number;
+  wait?: number; // player units: seconds left inside the gate before walking out (untargetable, not drawn)
+  waitTotal?: number;
   planted?: boolean; // ranged zombies with plantX: true once stopped
   windupLeft: number; // < 0 means not winding up
   hitFlash: number;
@@ -156,7 +158,18 @@ export function tryDeploy(w: World, kind: string): DeployResult {
   if (livingPlayerUnits(w) >= w.data.config.world.maxUnitsAlive) return 'unit-limit';
   const cap = unitDef(w, kind).maxAlive;
   if (cap !== undefined && w.entities.filter((e) => !e.dead && e.kind === kind).length >= cap) return 'unit-limit';
-  if (!spawn(w, kind, holdX(w, kind))) return 'entity-cap';
+  const def = unitDef(w, kind);
+  const cfg = w.data.config.world;
+  const mobile = def.cost === undefined;
+  const e = spawn(w, kind, mobile ? cfg.spawnPlayerX : holdX(w, kind));
+  if (!e) return 'entity-cap';
+  if (mobile) {
+    // Units leave the gate one by one: the kind's own delay, and at least one stagger after the last unit still inside.
+    let last = -Infinity;
+    for (const o of w.entities) if (!o.dead && o.team === 'player' && (o.wait ?? 0) > 0) last = Math.max(last, o.wait!);
+    e.wait = Math.max(cfg.exitDelay[kind] ?? 0, last + cfg.exitStagger);
+    e.waitTotal = e.wait;
+  }
   c.count--;
   w.deployCd[kind] = unitDef(w, kind).deployCooldown ?? 0;
   w.globalCd = w.data.config.world.globalDeployCooldown;

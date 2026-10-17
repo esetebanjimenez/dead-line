@@ -186,7 +186,7 @@ export class Renderer {
       v.used = true;
       const x = e.prevX + (e.x - e.prevX) * alpha;
       const f = w.data.config.feel;
-      const drop = (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
+      const drop = e.waitTotal !== undefined ? 0 : (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
       const dep = depthOf(e.id);
       const p = project(dep, x + (((e.id * 7) % 13) / 12 - 0.5) * MAX_JITTER_X);
       p.x += wallClearance(x, w.data.config.world.wallX);
@@ -198,10 +198,16 @@ export class Renderer {
       if (v.sprite.visible) {
         const t = this.texFor(this.artKind(e), poseOf(e));
         if (t) v.sprite.texture = t;
-        const bob = e.def.speed > 0 && !e.dead ? Math.sin(w.time * 9 + e.id) * 2 : 0;
+        const bob = (e.def.speed > 0 || e.prevX !== e.x) && !e.dead ? Math.sin(w.time * 9 + e.id) * 2 : 0;
         v.sprite.y = bob;
       }
-      v.root.alpha = e.dead ? Math.max(0, e.fade / w.data.config.feel.deathFade) : 1;
+      v.root.alpha = e.dead
+        ? Math.max(0, e.fade / w.data.config.feel.deathFade)
+        : e.waitTotal !== undefined
+          ? (e.wait ?? 0) > 0
+            ? 0
+            : Math.min(1, (e.age - e.waitTotal) / 0.2)
+          : 1;
       v.body.alpha = v.sprite.alpha = e.hitFlash > 0 ? 0.55 : 1;
       v.bar.clear();
       if (!e.dead && e.hp < e.maxHp) {
