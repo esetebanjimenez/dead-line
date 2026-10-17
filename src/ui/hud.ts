@@ -21,7 +21,8 @@ export class Hud {
     for (const u of w.data.units.filter((x) => x.team === 'player' && x.cost === undefined)) {
       const el = document.createElement('button');
       el.className = 'deploy';
-      el.innerHTML = `<div class="fill"></div><span>${u.name}</span><span class="n"></span><span style="font-size:10px">[${key}]</span>`;
+      el.innerHTML = `<div class="fill"></div><span>${u.name}</span><span class="n"></span><span data-k style="font-size:10px">[${key}]</span>`;
+      el.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${u.id}_00.png)`;
       const n = el.querySelector('.n') as HTMLElement;
       const fill = el.querySelector('.fill') as HTMLElement;
       const press = () => {
@@ -43,7 +44,8 @@ export class Hud {
     if (tw) {
       const tb = document.createElement('button');
       tb.className = 'deploy';
-      tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span style="font-size:10px">[${key}]</span>`;
+      tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span data-k style="font-size:10px">[${key}]</span>`;
+      tb.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${tw.id}_00.png)`;
       const build = () => {
         if (buildStructure(this.getWorld(), tw.id) !== 'ok') {
           tb.classList.remove('shake');

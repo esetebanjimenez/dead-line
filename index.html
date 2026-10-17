@@ -11,8 +11,11 @@
   #hud{position:absolute;left:0;right:0;bottom:0;display:flex;gap:12px;justify-content:center;padding:10px;pointer-events:none}
   .deploy{pointer-events:auto;width:84px;height:84px;border-radius:50%;border:3px solid #fff;background:#3f5a22;color:#fff;font-weight:800;font-size:12px;position:relative;cursor:pointer;overflow:hidden;padding:0}
   .deploy .fill{position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.55) calc((1 - var(--p,1))*360deg),transparent 0)}
-  .deploy span{position:relative;display:block}
-  .deploy .n{font-size:22px}
+  .deploy{background-size:cover;background-position:center}
+  .deploy span{position:absolute;left:0;right:0;display:block;text-shadow:0 1px 3px #000}
+  .deploy span:first-of-type{bottom:0;padding:2px 0 5px;font-size:10px;line-height:11px;background:#000b;z-index:2}
+  .deploy .n{top:20px;font-size:22px}
+  .deploy span[data-k]{top:4px;font-size:10px;opacity:.9}
   .deploy.empty{border-color:#d8343a;animation:none}
   .deploy.shake{animation:shake .2s}
   @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
