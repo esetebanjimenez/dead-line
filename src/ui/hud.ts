@@ -26,6 +26,7 @@ export class Hud {
       el.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${u.id}_00.png)`;
       const n = el.querySelector('.n') as HTMLElement;
       const fill = el.querySelector('.fill') as HTMLElement;
+      const myKey = String(key);
       const press = () => {
         if (tryDeploy(this.getWorld(), u.id) !== 'ok') {
           el.classList.remove('shake');
@@ -35,7 +36,7 @@ export class Hud {
       };
       onPress(el, press);
       window.addEventListener('keydown', (e) => {
-        if (e.key === String(key)) press();
+        if (e.key === myKey) press();
       });
       key++;
       hud.appendChild(el);
@@ -47,6 +48,7 @@ export class Hud {
       tb.className = 'deploy';
       tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span data-k style="font-size:10px">[${key}]</span>`;
       tb.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${tw.id}_00.png)`;
+      const towerKey = String(key);
       const build = () => {
         if (buildStructure(this.getWorld(), tw.id) !== 'ok') {
           tb.classList.remove('shake');
@@ -56,7 +58,7 @@ export class Hud {
       };
       onPress(tb, build);
       window.addEventListener('keydown', (e) => {
-        if (e.key === String(key)) build();
+        if (e.key === towerKey) build();
       });
       hud.appendChild(tb);
       this.tower = { el: tb, id: tw.id, cost: tw.cost! };

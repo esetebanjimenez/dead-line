@@ -26,7 +26,7 @@ export const units: UnitDef[] = [
   {
     id: 'shield',
     team: 'player',
-    name: 'Shield trooper',
+    name: 'Shield',
     hp: 160,
     dps: 5,
     range: 40,
