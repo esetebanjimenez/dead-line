@@ -17,6 +17,7 @@ export class Renderer {
   private views = new Map<number, View>();
   private pool: View[] = [];
   private wall = new Graphics();
+  private wallSprites: Sprite[] = [];
   private base = new Graphics();
   private pressure = new Graphics();
   private lw = CANVAS_W;
@@ -35,6 +36,14 @@ export class Renderer {
       shambler2: ['idle', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
+    for (const st of ['intact', 'damaged66', 'damaged33']) {
+      const name = `wall_t1_${st}_00`;
+      try {
+        this.tex.set(name, await Assets.load<Texture>(`${base}${name}.png`));
+      } catch {
+        /* fall back to drawn palisade */
+      }
+    }
     for (const [k, anims] of Object.entries(kinds))
       for (const a of anims) {
         const name = `${k}_t1_${a}_00`;
@@ -194,7 +203,29 @@ export class Renderer {
     // Frontline marker: a sandbag line where Shield troopers land.
     for (let y = top + 20; y < bot; y += 44) this.wall.roundRect(wx + 40, y, 26, 8, 4).fill({ color: 0xb79c6a, alpha: 0.7 });
 
-    if (w.wallHp > 0) {
+    const wst = f <= 0.33 ? 'damaged33' : f <= 0.66 ? 'damaged66' : 'intact';
+    const wtex = this.tex.get(`wall_t1_${wst}_00`);
+    if (wtex) {
+      const rows = [1, 0.5, 0];
+      while (this.wallSprites.length < rows.length) {
+        const sp = new Sprite();
+        sp.anchor.set(0.5, 1);
+        this.world.addChild(sp);
+        this.wallSprites.push(sp);
+      }
+      const fe = w.data.config.feel;
+      const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
+      rows.forEach((d, i) => {
+        const p = project(d, cfg.wallX);
+        const sp = this.wallSprites[i]!;
+        sp.visible = w.wallHp > 0;
+        sp.texture = wtex;
+        sp.position.set(p.x + sx, p.y + 6);
+        sp.scale.set(p.scale);
+        sp.zIndex = Math.round(p.z * 1000) + 1;
+        if (w.wallHp > 0) this.wall.ellipse(p.x, p.y + 4, 70 * p.scale, 9 * p.scale).fill({ color: 0x000000, alpha: 0.25 });
+      });
+    } else if (w.wallHp > 0) {
       const fe = w.data.config.feel;
       const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
       const x0 = wx - 12 + sx;
