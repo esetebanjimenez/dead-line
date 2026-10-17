@@ -218,22 +218,21 @@ describe('tower (M2)', () => {
 });
 
 describe('fire archer puddle (M2)', () => {
-  it('aims at the rearmost unit, lands a patch after the telegraph, and the patch hurts then expires', () => {
+  it('hits the nearest frontline unit, lands a patch after the telegraph, and the patch hurts then expires', () => {
     const w = createWorld(gameData);
     w.phase = 'done'; // keep the wave system out of the way
-    const a = spawn(w, 'rifleman', 150)!;
-    const front = spawn(w, 'rifleman', 220)!;
-    const arch = spawn(w, 'spitter', 330)!;
+    const back = spawn(w, 'rifleman', 150)!;
+    const shield = spawn(w, 'shield', 300)!;
+    const arch = spawn(w, 'spitter', 440)!;
     run(w, 0.2);
-    expect(arch.aimId).toBe(a.id);
-    expect(front.hp).toBe(front.maxHp);
+    expect(arch.aimId).toBe(shield.id);
+    expect(shield.hp).toBe(shield.maxHp);
     run(w, 1);
     expect(w.puddles.length).toBe(1);
-    expect(a.hp).toBeLessThan(a.maxHp);
-    run(w, 3.5);
-    expect(w.puddles.length).toBeGreaterThanOrEqual(0);
-    w.puddles = [];
-    expect(front.hp).toBe(front.maxHp);
+    expect(shield.hp).toBeLessThan(shield.maxHp);
+    expect(back.hp).toBe(back.maxHp);
+    run(w, 3);
+    expect(w.puddles.every((p) => p.age < p.ttl)).toBe(true);
   });
 });
 

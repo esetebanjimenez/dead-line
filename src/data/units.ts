@@ -95,20 +95,19 @@ export const units: UnitDef[] = [
     width: 18,
     height: 30,
   },
-  // Fire Archer (id spitter): outranges the line, aims at the rearmost unit, burning patch. Speed and attackInterval are programmer assumptions (spec silent).
+  // Fire Archer (id spitter): range 170, hits the nearest frontline unit before the wall, burning patch. Speed and attackInterval are programmer assumptions (spec silent).
   {
     id: 'spitter',
     team: 'zombie',
     name: 'Fire Archer',
     hp: 50,
     dps: 0,
-    range: 220,
+    range: 170,
     attackInterval: 2.5,
     windup: 0.6,
     speed: 28,
     knockback: 0,
     reward: 8,
-    targeting: 'backline',
     puddle: { halfWidth: 30, dps: 8, duration: 3 },
     color: 0xe8803a,
     width: 22,
