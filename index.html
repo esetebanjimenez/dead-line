@@ -32,6 +32,15 @@
   #end button{font-size:22px;padding:10px 26px;border-radius:24px;border:3px solid #fff;background:#d8343a;color:#fff;font-weight:800}
   #perf{position:absolute;left:6px;top:6px;font:11px monospace;background:#0008;padding:3px 6px;border-radius:4px;display:none;pointer-events:none;white-space:pre}
   #rotate{position:fixed;inset:0;background:#1d2a14;display:none;align-items:center;justify-content:center;text-align:center;font-size:24px;font-weight:800;z-index:9}
+  @media (max-width:780px){
+    #hud{gap:6px;padding:6px}
+    .deploy{width:68px;height:68px;border-width:2px;font-size:10px}
+    .deploy span:first-of-type{font-size:8px;line-height:9px;padding:1px 0 4px}
+    .deploy .n{top:16px;font-size:17px}
+    .deploy span[data-k]{top:3px;font-size:8px!important}
+    .deploy .n.lock{font-size:11px;top:21px}
+    .deploy .n.cost::before{width:14px;height:14px}
+  }
   @media (orientation:portrait) and (max-width:800px){#rotate{display:flex}}
 </style>
 </head>
