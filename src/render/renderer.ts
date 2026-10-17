@@ -76,7 +76,7 @@ export class Renderer {
 
   async init(host: HTMLElement, w: World): Promise<void> {
     await this.app.init({
-      background: 0x5fa83a,
+      background: 0x4a6847,
       resizeTo: host,
       antialias: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2),
