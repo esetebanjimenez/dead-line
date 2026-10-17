@@ -1,6 +1,6 @@
 // Headless balance runner: `pnpm sim`. Runs bot strategies many times with seeded randomness (bots only; the sim is deterministic).
 import { gameData } from '../src/data';
-import { buildStructure, createWorld, deploy, repairWall, step, type World } from '../src/sim';
+import { buildStructure, createWorld, deploy, repairWall, step, upgradeWall, type World } from '../src/sim';
 
 function rng(seed: number) {
   let s = seed >>> 0;
@@ -29,6 +29,18 @@ const smartSniper: Bot = (w, r) => {
   if (w.wave >= 3 && !w.entities.some((e) => e.kind === 'sniper' && !e.dead)) deploy(w, 'sniper');
 };
 
+// Smart + Sniper + wall tier 2: buys the wall upgrade as soon as it can afford it after wave 3 (the upgrade also fully repairs).
+const smartT2: Bot = (w, r) => {
+  upgradeWall(w);
+  smartSniper(w, r);
+};
+
+// Mix + wall tier 2: same random deploys, but buys the wall upgrade after wave 3 when it can.
+const mixT2: Bot = (w, r) => {
+  upgradeWall(w);
+  mix(w, r);
+};
+
 function play(bot: Bot, seed: number) {
   const w = createWorld(gameData);
   const r = rng(seed);
@@ -42,7 +54,7 @@ function play(bot: Bot, seed: number) {
     if (bot !== spam) {
       repairWall(w);
       // Smart builds the Tower once the wall is full and it has the Scrap.
-      if ((bot === smart || bot === smartSniper) && w.wallHp >= w.wallMaxHp) buildStructure(w, 'tower');
+      if ((bot === smart || bot === smartSniper || bot === smartT2) && w.wallHp >= w.wallMaxHp) buildStructure(w, 'tower');
     }
     step(w);
     for (const e of w.entities)
@@ -70,8 +82,10 @@ const N = 200;
 for (const [name, bot] of [
   ['spam', spam],
   ['mix', mix],
+  ['mix+t2', mixT2],
   ['smart', smart],
   ['smart+sniper', smartSniper],
+  ['smart+sniper+t2', smartT2],
 ] as const) {
   const res = Array.from({ length: N }, (_, i) => play(bot, i + 1));
   const wins = res.filter((x) => x.status === 'won').length;

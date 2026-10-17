@@ -47,6 +47,7 @@ export interface World {
   entities: Entity[];
   wallHp: number;
   wallMaxHp: number;
+  wallTier: 1 | 2;
   baseHp: number;
   baseMaxHp: number;
   charges: Record<string, ChargeState>;
@@ -77,6 +78,7 @@ export function createWorld(data: GameData): World {
     entities: [],
     wallHp: data.config.world.wallHp,
     wallMaxHp: data.config.world.wallHp,
+    wallTier: 1,
     baseHp: data.config.world.baseHp,
     baseMaxHp: data.config.world.baseHp,
     charges,
@@ -181,13 +183,27 @@ export function tryDeploy(w: World, kind: string): DeployResult {
 /** Between waves only (pause or banner). Spends Scrap at 1 per `repairHpPerScrap` HP, up to full HP. Returns HP restored. */
 export function repairWall(w: World): number {
   if (w.status !== 'playing' || (w.phase !== 'pause' && w.phase !== 'banner')) return 0;
-  const rate = w.data.config.world.repairHpPerScrap;
+  const rate = w.data.config.world.repairHpPerScrap / (w.wallTier === 2 ? w.data.config.world.wallTier2.repairCostMult : 1);
   const missing = w.wallMaxHp - w.wallHp;
   const hp = Math.min(missing, Math.floor(w.scrap) * rate);
   if (hp <= 0) return 0;
   w.wallHp += hp;
   w.scrap -= Math.ceil(hp / rate);
   return hp;
+}
+
+/** Player action: upgrade the wall to tier 2 between waves, once, after the unlock wave. Costs Scrap and fully repairs. */
+export function upgradeWall(w: World): 'ok' | 'locked' | 'owned' | 'no-scrap' | 'bad-phase' {
+  const t2 = w.data.config.world.wallTier2;
+  if (w.wallTier === 2) return 'owned';
+  if (w.status !== 'playing' || (w.phase !== 'pause' && w.phase !== 'banner')) return 'bad-phase';
+  if (w.wave < t2.unlockWave) return 'locked';
+  if (w.scrap < t2.cost) return 'no-scrap';
+  w.scrap -= t2.cost;
+  w.wallTier = 2;
+  w.wallMaxHp = t2.hp;
+  w.wallHp = t2.hp;
+  return 'ok';
 }
 
 /** Player action: end the between-wave pause early. Does not touch charges or timers. */

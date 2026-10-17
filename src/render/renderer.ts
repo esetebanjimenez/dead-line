@@ -48,14 +48,15 @@ export class Renderer {
     } catch {
       /* fall back to the placeholder box */
     }
-    for (const st of ['intact', 'damaged66', 'damaged33']) {
-      const name = `wall_t1_${st}_00`;
-      try {
-        this.tex.set(name, await Assets.load<Texture>(`${base}${name}.png`));
-      } catch {
-        /* fall back to drawn palisade */
+    for (const st of ['intact', 'damaged66', 'damaged33'])
+      for (const tier of ['t1', 't2']) {
+        const name = `wall_${tier}_${st}_00`;
+        try {
+          this.tex.set(name, await Assets.load<Texture>(`${base}${name}.png`));
+        } catch {
+          /* fall back to drawn palisade */
+        }
       }
-    }
     for (const [k, anims] of Object.entries(kinds))
       for (const a of anims) {
         const name = `${k}_t1_${a}_00`;
@@ -278,7 +279,7 @@ export class Renderer {
     for (let y = top + 20; y < bot; y += 44) this.wall.roundRect(wx + 40, y, 26, 8, 4).fill({ color: 0xb79c6a, alpha: 0.7 });
 
     const wst = f <= 0.33 ? 'damaged33' : f <= 0.66 ? 'damaged66' : 'intact';
-    const wtex = this.tex.get(`wall_t1_${wst}_00`);
+    const wtex = (w.wallTier === 2 ? this.tex.get(`wall_t2_${wst}_00`) : undefined) ?? this.tex.get(`wall_t1_${wst}_00`);
     if (wtex) {
       const rows = [1, 0.5, 0];
       while (this.wallSprites.length < rows.length) {

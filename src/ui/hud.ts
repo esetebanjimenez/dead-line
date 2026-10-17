@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { tryDeploy, repairWall, buildStructure, skipPause } from '../sim';
+import { tryDeploy, repairWall, buildStructure, skipPause, upgradeWall } from '../sim';
 import { onPress } from '../input/pointer';
 
 export class Hud {
@@ -9,6 +9,7 @@ export class Hud {
   private lastWave = -1;
   private skip!: { el: HTMLButtonElement; n: HTMLElement };
   private tower?: { el: HTMLButtonElement; id: string; cost: number };
+  private upgrade!: { el: HTMLButtonElement; n: HTMLElement };
   private repair!: { el: HTMLButtonElement; n: HTMLElement };
 
   constructor(
@@ -83,6 +84,23 @@ export class Hud {
     });
     hud.appendChild(rep);
     this.repair = { el: rep, n: repN };
+    const up = document.createElement('button');
+    up.className = 'deploy';
+    up.style.display = 'none';
+    up.innerHTML = `<span>Wall tier 2</span><span class="n">${w.data.config.world.wallTier2.cost}</span><span data-k style="font-size:10px">[U]</span>`;
+    const doUpgrade = () => {
+      if (upgradeWall(this.getWorld()) !== 'ok') {
+        up.classList.remove('shake');
+        void up.offsetWidth;
+        up.classList.add('shake');
+      }
+    };
+    onPress(up, doUpgrade);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'u' || e.key === 'U') doUpgrade();
+    });
+    hud.appendChild(up);
+    this.upgrade = { el: up, n: up.querySelector('.n') as HTMLElement };
     onPress(document.getElementById('restart')!, onRestart);
   }
 
@@ -103,6 +121,9 @@ export class Hud {
     }
     this.skip.el.style.display = w.phase === 'pause' && w.status === 'playing' ? '' : 'none';
     this.skip.n.textContent = `${Math.ceil(w.phaseTimer)}s`;
+    const t2 = w.data.config.world.wallTier2;
+    this.upgrade.el.style.display = w.wallTier === 1 && w.wave >= t2.unlockWave ? '' : 'none';
+    this.upgrade.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < t2.cost);
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
     document.getElementById('wave')!.textContent = `${w.wave + 1}/${w.data.waves.length}`;
