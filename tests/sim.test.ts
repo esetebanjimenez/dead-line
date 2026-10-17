@@ -7,6 +7,7 @@ import {
   deploy,
   livingPlayerUnits,
   repairWall,
+  buildStructure,
   step,
   tryDeploy,
   TICK_DT,
