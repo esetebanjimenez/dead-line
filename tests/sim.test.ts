@@ -1,3 +1,4 @@
+import { keyToSlot, slotKeyLabel } from '../src/ui/keys';
 import { describe, expect, it } from 'vitest';
 import { gameData, validateData } from '../src/data';
 import {
@@ -348,5 +349,18 @@ describe('wall tier 2 (M2)', () => {
     w.phase = 'pause';
     w.scrap = 349;
     expect(upgradeWall(w)).toBe('no-scrap');
+  });
+});
+
+describe('hotkeys', () => {
+  it('maps each digit to its own slot only', () => {
+    const slots = ['rifleman', 'shield', 'sniper', 'tower'];
+    expect(keyToSlot('1', slots)).toBe('rifleman');
+    expect(keyToSlot('2', slots)).toBe('shield');
+    expect(keyToSlot('3', slots)).toBe('sniper');
+    expect(keyToSlot('4', slots)).toBe('tower');
+    expect(keyToSlot('5', slots)).toBeNull();
+    expect(keyToSlot('r', slots)).toBeNull();
+    expect(slotKeyLabel('sniper', slots)).toBe('3');
   });
 });

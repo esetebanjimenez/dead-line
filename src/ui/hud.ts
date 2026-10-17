@@ -1,6 +1,7 @@
 import type { World } from '../sim';
 import { tryDeploy, repairWall, buildStructure, skipPause, upgradeWall } from '../sim';
 import { onPress } from '../input/pointer';
+import { keyToSlot } from './keys';
 
 export class Hud {
   private buttons = new Map<string, { el: HTMLButtonElement; n: HTMLElement; fill: HTMLElement }>();
@@ -18,15 +19,21 @@ export class Hud {
   ) {
     const hud = document.getElementById('hud')!;
     const w = getWorld();
-    let key = 1;
-    for (const u of w.data.units.filter((x) => x.team === 'player' && x.cost === undefined)) {
+    const playerUnits = w.data.units.filter((x) => x.team === 'player' && x.cost === undefined);
+    const towerDef = w.data.units.find((x) => x.cost !== undefined);
+    const slots = [...playerUnits.map((x) => x.id), ...(towerDef ? [towerDef.id] : [])];
+    const slotActions = new Map<string, () => void>();
+    window.addEventListener('keydown', (e) => {
+      const id = keyToSlot(e.key, slots);
+      if (id) slotActions.get(id)?.();
+    });
+    for (const u of playerUnits) {
       const el = document.createElement('button');
       el.className = 'deploy';
-      el.innerHTML = `<div class="fill"></div><span>${u.name}</span><span class="n"></span><span data-k style="font-size:10px">[${key}]</span>`;
+      el.innerHTML = `<div class="fill"></div><span>${u.name}</span><span class="n"></span><span data-k style="font-size:10px">[${slots.indexOf(u.id) + 1}]</span>`;
       el.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${u.id}_00.png)`;
       const n = el.querySelector('.n') as HTMLElement;
       const fill = el.querySelector('.fill') as HTMLElement;
-      const myKey = String(key);
       const press = () => {
         if (tryDeploy(this.getWorld(), u.id) !== 'ok') {
           el.classList.remove('shake');
@@ -35,10 +42,7 @@ export class Hud {
         }
       };
       onPress(el, press);
-      window.addEventListener('keydown', (e) => {
-        if (e.key === myKey) press();
-      });
-      key++;
+      slotActions.set(u.id, press);
       hud.appendChild(el);
       this.buttons.set(u.id, { el, n, fill });
     }
@@ -46,9 +50,8 @@ export class Hud {
     if (tw) {
       const tb = document.createElement('button');
       tb.className = 'deploy';
-      tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span data-k style="font-size:10px">[${key}]</span>`;
+      tb.innerHTML = `<span>${tw.name}</span><span class="n">${tw.cost}</span><span data-k style="font-size:10px">[${slots.indexOf(tw.id) + 1}]</span>`;
       tb.style.backgroundImage = `url(${import.meta.env.BASE_URL}art/icon_${tw.id}_00.png)`;
-      const towerKey = String(key);
       const build = () => {
         if (buildStructure(this.getWorld(), tw.id) !== 'ok') {
           tb.classList.remove('shake');
@@ -57,9 +60,7 @@ export class Hud {
         }
       };
       onPress(tb, build);
-      window.addEventListener('keydown', (e) => {
-        if (e.key === towerKey) build();
-      });
+      slotActions.set(tw.id, build);
       hud.appendChild(tb);
       this.tower = { el: tb, id: tw.id, cost: tw.cost! };
     }
