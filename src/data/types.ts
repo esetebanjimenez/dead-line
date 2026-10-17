@@ -48,6 +48,14 @@ export interface GameConfig {
     surgeSpeedMult: number;
     surgeDuration: number;
     deathFade: number;
+    dropTime: number;
+    unitSpacing: number;
+    dropHeight: number;
+    wallShakePx: number;
+    wallShakeTime: number;
+    crackThresholds: [number, number];
+    pressureRange: number; // zombies within this distance of the wall count as pressure
+    pressureHigh: number; // pressure count that triggers the urgent warning
   };
   pacing: { bannerTime: number; wavePause: number };
 }

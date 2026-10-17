@@ -7,6 +7,7 @@ export class Hud {
   private bannerEl = document.getElementById('banner')!;
   private endEl = document.getElementById('end')!;
   private lastWave = -1;
+  private pressureEl = document.getElementById('pressure')!;
 
   constructor(private getWorld: () => World, onRestart: () => void) {
     const hud = document.getElementById('hud')!;
@@ -46,8 +47,19 @@ export class Hud {
     this.bannerEl.style.display = showBanner ? 'block' : 'none';
     if (showBanner && this.lastWave !== w.wave) {
       this.lastWave = w.wave;
-      this.bannerEl.textContent = `WAVE ${w.wave + 1}`;
+      const counts = new Map<string, number>();
+      for (const g of w.data.waves[w.wave].groups) counts.set(g.kind, (counts.get(g.kind) ?? 0) + g.count);
+      const list = [...counts].map(([k, n]) => `${n}x ${w.data.units.find((u) => u.id === k)!.name}`).join(', ');
+      this.bannerEl.innerHTML = `WAVE ${w.wave + 1}<div style="font-size:16px;font-weight:700">Incoming: ${list}</div>`;
     }
+    // Pressure: how many zombies are close to the wall. Urgent style above the configured threshold.
+    const fe = w.data.config.feel;
+    const wx = w.data.config.world.wallX;
+    let pressure = 0;
+    for (const e of w.entities) if (!e.dead && e.team === 'zombie' && e.x - wx <= fe.pressureRange) pressure++;
+    this.pressureEl.style.display = pressure > 0 && w.status === 'playing' ? 'block' : 'none';
+    this.pressureEl.textContent = `\u26A0 ${pressure}`;
+    this.pressureEl.classList.toggle('high', pressure >= fe.pressureHigh);
     this.endEl.style.display = w.status === 'playing' ? 'none' : 'flex';
     if (w.status !== 'playing') document.getElementById('endtext')!.textContent = w.status === 'won' ? 'Line held!' : 'Base overrun';
   }

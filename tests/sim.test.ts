@@ -68,3 +68,13 @@ describe('combat', () => {
     expect(Math.min(...z.map((e) => e.x))).toBeGreaterThanOrEqual(gameData.config.world.wallX);
   });
 });
+
+describe('unit lineup', () => {
+  it('spreads same-kind units out instead of stacking', () => {
+    const w = createWorld(gameData);
+    for (let i = 0; i < 4; i++) deploy(w, 'rifleman');
+    run(w, 6);
+    const xs = w.entities.filter((e) => e.kind === 'rifleman').map((e) => Math.round(e.x));
+    expect(new Set(xs).size).toBe(4);
+  });
+});

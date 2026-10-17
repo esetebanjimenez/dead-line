@@ -33,6 +33,7 @@ function applyHit(w: World, attacker: Entity, t: Target): void {
   const dmg = attacker.def.damage;
   if (t.kind === 'wall') {
     const before = w.wallHp;
+    w.wallShake = w.data.config.feel.wallShakeTime;
     w.wallHp = Math.max(0, w.wallHp - dmg);
     if (before > 0 && w.wallHp === 0) w.surgeTimer = w.data.config.feel.surgeDuration;
   } else if (t.kind === 'base') {
@@ -49,9 +50,13 @@ function applyHit(w: World, attacker: Entity, t: Target): void {
 
 export function combatSystem(w: World, dt: number): void {
   const cfg = w.data.config.world;
+  // Player units of the same kind line up behind each other instead of stacking on one spot.
+  const slots = new Map<string, number>();
   const speedMult = w.surgeTimer > 0 ? w.data.config.feel.surgeSpeedMult : 1;
   for (const e of w.entities) {
     if (e.dead) continue;
+    let slot = 0;
+    if (e.team === 'player') { slot = slots.get(e.kind) ?? 0; slots.set(e.kind, slot + 1); }
     e.cooldown = Math.max(0, e.cooldown - dt);
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     const t = findTarget(w, e);
@@ -72,7 +77,7 @@ export function combatSystem(w: World, dt: number): void {
     }
     if (e.team === 'zombie') e.x -= e.def.speed * speedMult * dt;
     else {
-      const limit = cfg.wallX - (e.def.holdOffset ?? 0);
+      const limit = cfg.wallX - (e.def.holdOffset ?? 0) - slot * w.data.config.feel.unitSpacing;
       if (e.x < limit) e.x = Math.min(limit, e.x + e.def.speed * dt);
     }
   }

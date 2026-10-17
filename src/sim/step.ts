@@ -13,6 +13,8 @@ export function step(w: World, dt: number = TICK_DT): void {
   w.tick++;
   for (const e of w.entities) e.prevX = e.x;
   w.surgeTimer = Math.max(0, w.surgeTimer - dt);
+  w.wallShake = Math.max(0, w.wallShake - dt);
+  for (const e of w.entities) e.age += dt;
   chargeSystem(w, dt);
   waveSystem(w, dt);
   combatSystem(w, dt);

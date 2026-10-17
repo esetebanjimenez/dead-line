@@ -25,7 +25,6 @@ export class Renderer {
     const gy = w.data.config.world.groundY;
     g.rect(0, gy - 10, this.lw, this.lh - gy + 10).fill(0x3f7f2e);
     g.rect(0, gy + 6, this.lw, 40).fill(0xa8a39a);
-    g.rect(w.data.config.world.spawnX - 60, 0, 60, this.lh).fill({ color: 0x6a4a7c, alpha: 0.12 });
     this.world.addChild(g, this.base, this.wall);
     this.base.rect(w.data.config.world.baseX - 30, gy - 70, 36, 76).fill(0x7c8fa3).stroke({ color: 0x222222, width: 2 });
     this.app.renderer.on('resize', () => this.fit());
@@ -65,7 +64,9 @@ export class Renderer {
       if (!v) { v = this.acquire(); this.build(v, e); this.views.set(e.id, v); }
       v.used = true;
       const x = e.prevX + (e.x - e.prevX) * alpha;
-      v.root.position.set(x, gy);
+      const f = w.data.config.feel;
+      const drop = (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
+      v.root.position.set(x, gy - drop + (e.id % 3) * 5); // small depth stagger so lined-up units stay readable
       v.root.scale.x = e.team === 'zombie' ? 1 : -1;
       v.root.alpha = e.dead ? Math.max(0, e.fade / w.data.config.feel.deathFade) : 1;
       v.body.alpha = e.hitFlash > 0 ? 0.55 : 1;
@@ -84,7 +85,13 @@ export class Renderer {
     this.wall.clear();
     if (w.wallHp > 0) {
       const h = 60 + 20 * f;
-      this.wall.rect(cfg.wallX - 8, gy - h, 16, h).fill(f > 0.66 ? 0xc9a96b : f > 0.33 ? 0xb08d55 : 0x8a6b3e).stroke({ color: 0x222222, width: 2 });
+      const fe = w.data.config.feel;
+      const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
+      const x0 = cfg.wallX - 8 + sx;
+      this.wall.rect(x0, gy - h, 16, h).fill(0xc9a96b).stroke({ color: 0x222222, width: 2 });
+      // Crack overlays at the configured HP thresholds.
+      if (f <= fe.crackThresholds[0]) this.wall.moveTo(x0 + 2, gy - h + 8).lineTo(x0 + 10, gy - h * 0.6).lineTo(x0 + 5, gy - h * 0.4).stroke({ color: 0x3a2a14, width: 2 });
+      if (f <= fe.crackThresholds[1]) this.wall.moveTo(x0 + 14, gy - h * 0.9).lineTo(x0 + 6, gy - h * 0.5).lineTo(x0 + 12, gy - 6).stroke({ color: 0x3a2a14, width: 3 });
     }
   }
 }

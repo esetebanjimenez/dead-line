@@ -14,6 +14,7 @@ export interface Entity {
   hitFlash: number;
   dead: boolean;
   fade: number;
+  age: number;
 }
 export interface ChargeState { count: number; timer: number }
 export type Phase = 'banner' | 'fighting' | 'pause' | 'done';
@@ -37,6 +38,7 @@ export interface World {
   waveClock: number;
   spawnQueue: SpawnItem[];
   surgeTimer: number;
+  wallShake: number;
   status: Status;
 }
 
@@ -48,7 +50,7 @@ export function createWorld(data: GameData): World {
     wallHp: data.config.world.wallHp, wallMaxHp: data.config.world.wallHp,
     baseHp: data.config.world.baseHp, baseMaxHp: data.config.world.baseHp,
     charges, wave: 0, phase: 'banner', phaseTimer: data.config.pacing.bannerTime,
-    waveClock: 0, spawnQueue: [], surgeTimer: 0, status: 'playing',
+    waveClock: 0, spawnQueue: [], surgeTimer: 0, wallShake: 0, status: 'playing',
   };
 }
 
@@ -69,7 +71,7 @@ export function spawn(w: World, kind: string, x: number): Entity | null {
   const def = unitDef(w, kind);
   const e: Entity = {
     id: w.nextId++, team: def.team, kind, def, x, prevX: x, hp: def.hp, maxHp: def.hp,
-    cooldown: 0, windupLeft: -1, hitFlash: 0, dead: false, fade: 0,
+    cooldown: 0, windupLeft: -1, hitFlash: 0, dead: false, fade: 0, age: 0,
   };
   w.entities.push(e);
   return e;
