@@ -34,6 +34,7 @@ export class Renderer {
       brute: ['idle', 'attack', 'death'],
       spitter: ['idle', 'attack', 'death'],
       cavalry: ['idle', 'attack', 'death'],
+      hammerknight: ['idle', 'attack', 'death'],
       footman: ['idle', 'attack', 'death'],
       footman2: ['idle', 'attack', 'death'],
       shambler2: ['idle', 'attack', 'death'],
@@ -65,6 +66,7 @@ export class Renderer {
 
   /** Art key for an entity: Shamblers alternate between two skins by id. */
   private artKind(e: Entity): string {
+    if (e.kind === 'brute' && this.tex.has('hammerknight_t1_idle_00')) return 'hammerknight';
     if (e.kind === 'shambler' && this.tex.has('footman_t1_idle_00'))
       return e.id % 2 === 1 && this.tex.has('footman2_t1_idle_00') ? 'footman2' : 'footman';
     if (e.kind === 'runner' && this.tex.has('cavalry_t1_idle_00')) return 'cavalry';
