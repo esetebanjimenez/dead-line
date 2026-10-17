@@ -46,7 +46,7 @@ export const units: UnitDef[] = [
   {
     id: 'shambler',
     team: 'zombie',
-    name: 'Shambler',
+    name: 'Footman',
     hp: 80,
     dps: 6,
     range: 30,
@@ -63,7 +63,7 @@ export const units: UnitDef[] = [
   {
     id: 'runner',
     team: 'zombie',
-    name: 'Runner',
+    name: 'Light Cavalry',
     hp: 30,
     dps: 5,
     range: 24,
@@ -79,7 +79,7 @@ export const units: UnitDef[] = [
   {
     id: 'brute',
     team: 'zombie',
-    name: 'Brute',
+    name: 'Hammer Knight',
     hp: 260,
     dps: 17,
     range: 34,
