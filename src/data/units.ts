@@ -156,11 +156,11 @@ export const units: UnitDef[] = [
     height: 52,
   },
   {
-    // Battering Ram (Kingdom). Placeholder numbers from the Designer: HP 400, speed 18, 30 wall damage per second (tuned to 25).
+    // Battering Ram (Kingdom). Placeholder numbers from the Designer: HP 600 (was 400), speed 18, 30 wall damage per second (tuned to 25).
     id: 'ram',
     team: 'zombie',
     name: 'Battering Ram',
-    hp: 400,
+    hp: 600,
     dps: 25,
     range: 25,
     attackInterval: 1,
