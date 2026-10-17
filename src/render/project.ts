@@ -10,6 +10,12 @@ export const SCALE_NEAR = 1;
 export const SCALE_FAR = 0.85;
 export const MAX_JITTER_X = 6;
 
+/** Render-only clearance so units do not stand inside the 160px wall sprite (the sim wall has no thickness). */
+export const WALL_CLEAR_PX = 70;
+export function wallClearance(x: number, wallX: number): number {
+  return Math.max(-1, Math.min(1, (x - wallX) / 25)) * WALL_CLEAR_PX;
+}
+
 /** Stable 0..1 depth from an entity id (drawing only). */
 export function depthOf(id: number): number {
   const h = Math.imul(id + 1, 2654435761) >>> 0;

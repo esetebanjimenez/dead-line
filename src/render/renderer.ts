@@ -1,5 +1,5 @@
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project } from './project';
+import { CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project, wallClearance } from './project';
 import { computePressure, type Entity, type World } from '../sim';
 
 interface View {
@@ -187,6 +187,7 @@ export class Renderer {
       const drop = (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
       const dep = depthOf(e.id);
       const p = project(dep, x + (((e.id * 7) % 13) / 12 - 0.5) * MAX_JITTER_X);
+      p.x += wallClearance(x, w.data.config.world.wallX);
       v.root.position.set(p.x, p.y - drop * p.scale);
       v.root.zIndex = Math.round(p.z * 1000);
       // Sprites face right in the art. Zombies move left, so they are mirrored; player units face right.
