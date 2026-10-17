@@ -45,7 +45,7 @@ export const units: UnitDef[] = [
     id: 'shambler',
     team: 'zombie',
     name: 'Shambler',
-    hp: 90,
+    hp: 80,
     dps: 6,
     range: 30,
     attackInterval: 1.2,
