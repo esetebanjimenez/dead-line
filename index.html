@@ -20,7 +20,7 @@
   .deploy .n.cost{display:flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap}
   .deploy.empty .n.cost::before{filter:brightness(1.7) contrast(1.1)}
   .deploy .n.lock{font-size:13px;top:26px}
-  .deploy .n.cost::before{content:"";width:18px;height:18px;flex:none;background:url(/dead-line/art/icon_scrap_small_00.png) center/contain no-repeat}
+  .deploy .n.cost::before{content:"";width:18px;height:18px;flex:none;background:var(--scrap-small) center/contain no-repeat}
   #scrapicon{width:39px;height:39px;vertical-align:middle;margin-right:4px}
   .deploy.shake{animation:shake .2s}
   @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -46,7 +46,7 @@
 </head>
 <body>
 <div id="stage"></div>
-<div id="top"><div>Wave <span id="wave">1</span></div><div style="background:rgba(20,24,28,.82);color:#fff;font-weight:700;font-size:1.7em;line-height:1.2;padding:2px 14px;border-radius:12px;border:1px solid #6b6f73"><img id="scrapicon" alt="Scrap" src="/dead-line/art/icon_scrap_00.png" srcset="/dead-line/art/icon_scrap_00.png 1x, /dead-line/art/icon_scrap_00@2x.png 2x"><span id="scrap">0</span></div><div>Wall <div class="bar"><i id="wallbar" style="background:#c9a96b"></i></div></div><div>Base <div class="bar"><i id="basebar" style="background:#4fa3c7"></i></div></div></div>
+<div id="top"><div>Wave <span id="wave">1</span></div><div style="background:rgba(20,24,28,.82);color:#fff;font-weight:700;font-size:1.7em;line-height:1.2;padding:2px 14px;border-radius:12px;border:1px solid #6b6f73"><img id="scrapicon" alt="Scrap"><span id="scrap">0</span></div><div>Wall <div class="bar"><i id="wallbar" style="background:#c9a96b"></i></div></div><div>Base <div class="bar"><i id="basebar" style="background:#4fa3c7"></i></div></div></div>
 <div id="banner"></div>
 <div id="hud"></div>
 <div id="perf"></div>

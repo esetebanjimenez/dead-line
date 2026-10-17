@@ -32,6 +32,14 @@ export class Hud {
   ) {
     const hud = document.getElementById('hud')!;
     const w = getWorld();
+    // Base-safe art URLs (dev and the /dead-line/ production build): index.html can't use BASE_URL, so wire the Scrap icons here.
+    const base = import.meta.env.BASE_URL;
+    document.documentElement.style.setProperty('--scrap-small', `url(${base}art/icon_scrap_small_00.png)`);
+    const scrapIcon = document.getElementById('scrapicon') as HTMLImageElement | null;
+    if (scrapIcon) {
+      scrapIcon.srcset = `${base}art/icon_scrap_00.png 1x, ${base}art/icon_scrap_00@2x.png 2x`;
+      scrapIcon.src = `${base}art/icon_scrap_00.png`;
+    }
     const playerUnits = w.data.units.filter((x) => x.team === 'player' && x.cost === undefined);
     const towerDef = w.data.units.find((x) => x.cost !== undefined);
     const slots = [...playerUnits.map((x) => x.id), ...(towerDef ? [towerDef.id] : []), 'reinforce'];
@@ -119,7 +127,7 @@ export class Hud {
     this.repair = { el: rep, n: repN };
     const up = document.createElement('button');
     up.className = 'deploy';
-    up.innerHTML = `<span>Wall tier 2</span><span class="n cost">${w.data.config.world.wallTier2.cost}</span><span data-k style="font-size:10px">[U]</span>`;
+    up.innerHTML = `<span>Wall II</span><span class="n cost">${w.data.config.world.wallTier2.cost}</span><span data-k style="font-size:10px">[U]</span>`;
     const doUpgrade = () => {
       if (upgradeWall(this.getWorld()) !== 'ok') {
         up.classList.remove('shake');
@@ -135,7 +143,8 @@ export class Hud {
     this.upgrade = { el: up, n: up.querySelector('.n') as HTMLElement };
     const tu = document.createElement('button');
     tu.className = 'deploy';
-    tu.innerHTML = `<span>Tower tier 2</span><span class="n cost">${w.data.config.world.towerTier2.cost}</span><span data-k style="font-size:10px">[T]</span>`;
+    tu.style.backgroundImage = `url(${base}art/icon_tower_t2_00.png)`;
+    tu.innerHTML = `<span>Tower II</span><span class="n cost">${w.data.config.world.towerTier2.cost}</span><span data-k style="font-size:10px">[T]</span>`;
     const doTowerUpgrade = () => {
       if (upgradeTower(this.getWorld()) !== 'ok') {
         tu.classList.remove('shake');
