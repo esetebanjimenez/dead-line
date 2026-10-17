@@ -44,3 +44,24 @@ export function poseOf(
   if (e.def.speed > 0) return 'walk';
   return 'idle';
 }
+
+/** Strike frame length around a Ram hit, and how long the wall flash/shake lasts after it (seconds, render-only). */
+export const RAM_STRIKE_PRE = 0.12;
+export const RAM_STRIKE_POST = 0.15;
+
+/**
+ * Ram swing frame from its sim attack timers (no wall-clock): idle is the wind-up, the flipped attack frame is the strike.
+ * The hit lands when windupLeft reaches 0, then cooldown restarts at attackInterval. `since` is seconds since the hit
+ * (0..RAM_STRIKE_POST) while the strike is fresh, else -1; the wall flash and shake key off it.
+ */
+export function frameForRamAttack(
+  windupLeft: number,
+  cooldown: number,
+  attackInterval: number,
+): { frame: 'idle' | 'attack'; since: number } {
+  const since = windupLeft < 0 ? attackInterval - cooldown : -1;
+  const fresh = since >= 0 && since < RAM_STRIKE_POST;
+  if (fresh) return { frame: 'attack', since };
+  if (windupLeft >= 0 && windupLeft <= RAM_STRIKE_PRE) return { frame: 'attack', since: -1 };
+  return { frame: 'idle', since: -1 };
+}

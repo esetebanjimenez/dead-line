@@ -1,6 +1,19 @@
 import { ViewPool } from './pool';
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { BAND_NEAR_Y, CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project, wallClearance } from './project';
+import {
+  BAND_NEAR_Y,
+  CANVAS_H,
+  CANVAS_W,
+  MAX_JITTER_X,
+  X_SCALE,
+  BAND_FAR_Y,
+  depthOf,
+  frameForRamAttack,
+  poseOf,
+  project,
+  wallClearance,
+  RAM_STRIKE_POST,
+} from './project';
 import { artMeta } from './artMeta';
 import { computePressure, type Entity, type World } from '../sim';
 
@@ -21,6 +34,7 @@ export class Renderer {
   private pool = new ViewPool<View>(() => this.makeView());
   private wall = new Graphics();
   private wallSprites: Sprite[] = [];
+  private wallHit = 0; // 0..1 render-only Ram strike flash/shake, set while rendering entities each frame
   private base = new Graphics();
   private pressure = new Graphics();
   private fx = new Graphics();
@@ -180,6 +194,7 @@ export class Renderer {
 
   render(w: World, alpha: number): void {
     const gy = 520;
+    this.wallHit = 0;
     for (const v of this.views.values()) v.used = false;
     const list = w.stress.length ? w.entities.concat(w.stress) : w.entities;
     for (const e of list) {
@@ -202,7 +217,15 @@ export class Renderer {
       const face = e.team === 'zombie' ? -1 : 1;
       v.root.scale.set(p.scale * face, p.scale);
       if (v.sprite.visible) {
-        const t = this.texFor(this.artKind(e), poseOf(e, w.time));
+        let pose = poseOf(e, w.time);
+        if (e.def.id === 'ram' && !e.dead && e.x === e.prevX && (e.windupLeft >= 0 || e.cooldown > 0)) {
+          // Ram swing: idle is the wind-up, the (flipped) attack frame is the strike. Driven by the sim timers, not wall-clock.
+          const fr = frameForRamAttack(e.windupLeft, e.cooldown, e.def.attackInterval);
+          pose = fr.frame;
+          if (fr.since >= 0 && e.x - w.data.config.world.wallX <= e.def.range + 1)
+            this.wallHit = Math.max(this.wallHit, 1 - fr.since / RAM_STRIKE_POST);
+        }
+        const t = this.texFor(this.artKind(e), pose);
         if (t) v.sprite.texture = t;
         const meta = artMeta(this.artKind(e));
         v.sprite.anchor.set(meta.anchorX, 1);
@@ -307,12 +330,14 @@ export class Renderer {
         this.wallSprites.push(sp);
       }
       const fe = w.data.config.feel;
-      const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
+      const ramShake = this.wallHit * 4 * (Math.floor(w.time * 60) % 2 ? 1 : -1); // render-only, ~150ms decay
+      const sx = (w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0) + ramShake;
       rows.forEach((d, i) => {
         const p = project(d, cfg.wallX);
         const sp = this.wallSprites[i]!;
         sp.visible = w.wallHp > 0;
         sp.texture = wtex;
+        sp.tint = this.wallHit > 0 ? 0xffe0b0 : 0xffffff; // short light flash on the strike
         sp.position.set(p.x + sx, p.y + 6);
         sp.scale.set(p.scale);
         sp.zIndex = Math.round(p.z * 1000) + 1;

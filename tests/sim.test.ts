@@ -1,4 +1,5 @@
 import { ViewPool } from '../src/render/pool';
+import { frameForRamAttack } from '../src/render/project';
 import { keyToSlot, slotKeyLabel } from '../src/ui/keys';
 import { describe, expect, it } from 'vitest';
 import { gameData, validateData } from '../src/data';
@@ -560,5 +561,14 @@ describe('reinforce (M4 module A)', () => {
     const bad = structuredClone(gameData);
     bad.config.world.reinforce.cost = 0;
     expect(() => validateData(bad)).toThrow(/reinforce.cost/);
+  });
+});
+
+describe('frameForRamAttack', () => {
+  it('idles as the wind-up, strikes around the hit, then returns to idle', () => {
+    expect(frameForRamAttack(0.5, 0, 1).frame).toBe('idle');
+    expect(frameForRamAttack(0.05, 0, 1).frame).toBe('attack');
+    expect(frameForRamAttack(-1, 1, 1)).toEqual({ frame: 'attack', since: 0 });
+    expect(frameForRamAttack(-1, 0.5, 1).frame).toBe('idle');
   });
 });
