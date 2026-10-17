@@ -509,7 +509,7 @@ describe('Battering Ram (M3)', () => {
     const rams = last.groups.filter((g) => g.kind === 'ram').reduce((n, g) => n + g.count, 0);
     expect(rams).toBe(3);
     const total = last.groups.reduce((n, g) => n + g.count, 0);
-    expect(total).toBe(27);
+    expect(total).toBe(28);
     expect(total + 11).toBeLessThan(gameData.config.world.entityCap);
   });
   it('free wall repairs fire after waves 5 and 8', () => {

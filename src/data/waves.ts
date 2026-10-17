@@ -63,6 +63,6 @@ export const waves: WaveDef[] = [
   // M3 waves 7 to 10 (Designer spec v0.1 Module A). Window = wave 6 window (42s) + 5s per wave; Rams in the back third, staggered.
   buildWave(7, 138, { shambler: 12, runner: 4, spitter: 3, brute: 1 }),
   buildWave(8, 159, { shambler: 12, runner: 5, spitter: 3, brute: 2, ram: 1 }),
-  buildWave(9, 183, { shambler: 12, runner: 5, spitter: 3, brute: 1, ram: 1 }),
-  buildWave(10, 210, { shambler: 14, runner: 6, spitter: 3, brute: 1, ram: 3 }),
+  buildWave(9, 183, { shambler: 10, runner: 5, spitter: 3, brute: 2, ram: 1 }),
+  buildWave(10, 210, { shambler: 14, runner: 6, spitter: 3, brute: 2, ram: 3 }),
 ];
