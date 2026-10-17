@@ -1,3 +1,4 @@
+import { ViewPool } from '../src/render/pool';
 import { keyToSlot, slotKeyLabel } from '../src/ui/keys';
 import { describe, expect, it } from 'vitest';
 import { gameData, validateData } from '../src/data';
@@ -364,5 +365,84 @@ describe('hotkeys', () => {
     expect(keyToSlot('5', slots)).toBeNull();
     expect(keyToSlot('r', slots)).toBeNull();
     expect(slotKeyLabel('sniper', slots)).toBe('3');
+  });
+});
+
+describe('pool churn (render view pool)', () => {
+  it('keeps created flat while in-use rises and falls around 156 entities', () => {
+    const pool = new ViewPool(() => ({ id: Math.random() }));
+    const held: { id: number }[] = [];
+    let peak = 0;
+    // Warm up to the target population, then churn ~10 per second for 60 s at 30 Hz.
+    for (let i = 0; i < 156; i++) held.push(pool.acquire());
+    const warm = pool.created;
+    expect(warm).toBe(156);
+    let rising = false;
+    let sawRise = false;
+    let sawFall = false;
+    let last = pool.inUse;
+    for (let tick = 0; tick < 1800; tick++) {
+      // Every third tick: kill 1 and spawn 1 (10 per second); every 100 ticks drift +-6 around 156.
+      if (tick % 3 === 0) {
+        const v = held.pop();
+        if (v) pool.release(v);
+        held.unshift(pool.acquire());
+      }
+      const phase = Math.floor(tick / 100) % 2;
+      if (tick % 100 === 50) {
+        for (let k = 0; k < 6; k++) {
+          if (phase === 0) {
+            const v = held.pop();
+            if (v) pool.release(v);
+          } else held.push(pool.acquire());
+        }
+      }
+      peak = Math.max(peak, pool.inUse);
+      if (pool.inUse > last) sawRise = rising = true;
+      if (pool.inUse < last) sawFall = true;
+      last = pool.inUse;
+      expect(pool.inUse).toBe(held.length);
+    }
+    expect(rising).toBe(true);
+    expect(sawRise && sawFall).toBe(true);
+    expect(pool.created).toBeLessThanOrEqual(warm + 6); // only the drift peak may add objects
+    expect(peak).toBeLessThanOrEqual(162);
+  });
+});
+
+describe('150-entity benchmark', () => {
+  it('averages under 2 ms per tick with 150 entities over 1000 ticks', () => {
+    const w = createWorld(gameData);
+    w.phase = 'fighting';
+    w.wallHp = w.wallMaxHp = 1e9;
+    w.baseHp = w.baseMaxHp = 1e9;
+    const cap = w.data.config.world.entityCap;
+    for (let i = 0; i < cap; i++) {
+      spawn(w, i % 2 ? 'shambler' : 'rifleman', 100 + (i % 30) * 10);
+    }
+    const t0 = performance.now();
+    for (let i = 0; i < 1000; i++) {
+      step(w);
+      // Keep the population at the cap so every tick is a full-load tick.
+      while (aliveCount(w) < cap && spawn(w, 'shambler', 1000)) {
+        /* refill */
+      }
+    }
+    const avg = (performance.now() - t0) / 1000;
+    expect(aliveCount(w)).toBeGreaterThan(100);
+    expect(avg).toBeLessThan(2);
+  });
+});
+
+describe('leash geometry', () => {
+  it('a Rifleman held at the leash x 420 can hit an Archer planted at x 350', () => {
+    const w = createWorld(gameData);
+    w.phase = 'fighting';
+    const r = spawn(w, 'rifleman', gameData.config.world.leashX)!;
+    const a = spawn(w, 'spitter', 350)!;
+    expect(Math.abs(r.x - a.x)).toBeLessThanOrEqual(r.def.range);
+    const hp = a.hp;
+    for (let i = 0; i < 150; i++) step(w);
+    expect(a.hp).toBeLessThan(hp);
   });
 });

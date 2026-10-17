@@ -1,3 +1,4 @@
+import { ViewPool } from './pool';
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { BAND_NEAR_Y, CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project, wallClearance } from './project';
 import { computePressure, type Entity, type World } from '../sim';
@@ -15,7 +16,7 @@ export class Renderer {
   app = new Application();
   private world!: Container;
   private views = new Map<number, View>();
-  private pool: View[] = [];
+  private pool = new ViewPool<View>(() => this.makeView());
   private wall = new Graphics();
   private wallSprites: Sprite[] = [];
   private base = new Graphics();
@@ -132,11 +133,12 @@ export class Renderer {
   }
 
   private acquire(): View {
-    const v = this.pool.pop();
-    if (v) {
-      v.root.visible = true;
-      return v;
-    }
+    const v = this.pool.acquire();
+    v.root.visible = true;
+    return v;
+  }
+
+  private makeView(): View {
     const root = new Container();
     const body = new Graphics();
     const bar = new Graphics();
@@ -170,7 +172,7 @@ export class Renderer {
 
   /** For the perf overlay: sprite views in use and idle views waiting in the pool. */
   get viewStats(): { active: number; pooled: number } {
-    return { active: this.views.size, pooled: this.pool.length };
+    return { active: this.views.size, pooled: this.pool.pooled };
   }
 
   render(w: World, alpha: number): void {
@@ -221,7 +223,7 @@ export class Renderer {
     for (const [id, v] of this.views) {
       if (!v.used) {
         v.root.visible = false;
-        this.pool.push(v);
+        this.pool.release(v);
         this.views.delete(id);
       }
     }
