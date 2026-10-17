@@ -7,6 +7,7 @@ import {
   deploy,
   livingPlayerUnits,
   repairWall,
+  skipPause,
   spawn,
   buildStructure,
   step,
@@ -233,5 +234,21 @@ describe('fire archer puddle (M2)', () => {
     expect(w.puddles.length).toBeGreaterThanOrEqual(0);
     w.puddles = [];
     expect(front.hp).toBe(front.maxHp);
+  });
+});
+
+describe('wave pause (M2)', () => {
+  it('lasts the configured pause and can be skipped without touching charges', () => {
+    expect(gameData.config.pacing.wavePause).toBe(10);
+    const w = createWorld(gameData);
+    w.phase = 'pause';
+    w.phaseTimer = 10;
+    w.charges['rifleman'].count = 1;
+    w.charges['rifleman'].timer = 5;
+    expect(skipPause(w)).toBe(true);
+    expect(w.charges['rifleman'].count).toBe(1);
+    step(w);
+    expect(w.phase).toBe('banner');
+    expect(skipPause(w)).toBe(false);
   });
 });

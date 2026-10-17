@@ -174,6 +174,13 @@ export function repairWall(w: World): number {
   return hp;
 }
 
+/** Player action: end the between-wave pause early. Does not touch charges or timers. */
+export function skipPause(w: World): boolean {
+  if (w.status !== 'playing' || w.phase !== 'pause') return false;
+  w.phaseTimer = 0;
+  return true;
+}
+
 export type BuildResult = 'ok' | 'no-scrap' | 'built' | 'game-over' | 'entity-cap';
 
 /** Player action: build a Scrap structure (the Tower). One slot: refused while one is alive. */

@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { tryDeploy, repairWall, buildStructure } from '../sim';
+import { tryDeploy, repairWall, buildStructure, skipPause } from '../sim';
 import { onPress } from '../input/pointer';
 
 export class Hud {
@@ -7,6 +7,7 @@ export class Hud {
   private bannerEl = document.getElementById('banner')!;
   private endEl = document.getElementById('end')!;
   private lastWave = -1;
+  private skip!: { el: HTMLButtonElement; n: HTMLElement };
   private tower?: { el: HTMLButtonElement; id: string; cost: number };
   private repair!: { el: HTMLButtonElement; n: HTMLElement };
 
@@ -57,6 +58,18 @@ export class Hud {
       hud.appendChild(tb);
       this.tower = { el: tb, id: tw.id, cost: tw.cost! };
     }
+    const go = document.createElement('button');
+    go.className = 'deploy';
+    go.style.display = 'none';
+    go.innerHTML = '<span>Start wave</span><span class="n"></span><span style="font-size:10px">[Space]</span>';
+    const goN = go.querySelector('.n') as HTMLElement;
+    const doSkip = () => void skipPause(this.getWorld());
+    onPress(go, doSkip);
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') doSkip();
+    });
+    hud.appendChild(go);
+    this.skip = { el: go, n: goN };
     const rep = document.createElement('button');
     rep.className = 'deploy';
     rep.innerHTML = '<span>Repair</span><span class="n"></span><span style="font-size:10px">[R]</span>';
@@ -85,6 +98,8 @@ export class Hud {
       const built = w.entities.some((e) => !e.dead && e.kind === t.id);
       this.tower.el.classList.toggle('empty', built || w.scrap < t.cost);
     }
+    this.skip.el.style.display = w.phase === 'pause' && w.status === 'playing' ? '' : 'none';
+    this.skip.n.textContent = `${Math.ceil(w.phaseTimer)}s`;
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
     document.getElementById('wave')!.textContent = `${w.wave + 1}/${w.data.waves.length}`;
