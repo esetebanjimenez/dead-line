@@ -162,7 +162,7 @@ export const units: UnitDef[] = [
     name: 'Battering Ram',
     hp: 400,
     dps: 25,
-    range: 40,
+    range: 25,
     attackInterval: 1,
     windup: 0.5,
     speed: 18,
