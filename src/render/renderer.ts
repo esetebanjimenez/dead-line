@@ -1,10 +1,12 @@
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project } from './project';
 import { computePressure, type Entity, type World } from '../sim';
 
 interface View {
   root: Container;
   body: Graphics;
   bar: Graphics;
+  sprite: Sprite;
   used: boolean;
 }
 
@@ -17,12 +19,34 @@ export class Renderer {
   private wall = new Graphics();
   private base = new Graphics();
   private pressure = new Graphics();
-  private lw = 1000;
-  private lh = 400;
+  private lw = CANVAS_W;
+  private lh = CANVAS_H;
+  private tex = new Map<string, Texture>();
+
+  private async loadArt(): Promise<void> {
+    const kinds: Record<string, string[]> = {
+      rifleman: ['idle', 'walkA', 'walkB', 'attack', 'hit', 'death'],
+      shield: ['idle', 'attack', 'death'],
+      shambler: ['idle', 'attack', 'death'],
+      sniper: ['idle', 'attack', 'death'],
+    };
+    const base = import.meta.env.BASE_URL + 'art/';
+    for (const [k, anims] of Object.entries(kinds))
+      for (const a of anims) {
+        const name = `${k}_t1_${a}_00`;
+        try {
+          this.tex.set(name, await Assets.load<Texture>(`${base}${name}.png`));
+        } catch {
+          /* missing art falls back to the placeholder box */
+        }
+      }
+  }
+
+  private texFor(kind: string, pose: string): Texture | undefined {
+    return this.tex.get(`${kind}_t1_${pose}_00`) ?? this.tex.get(`${kind}_t1_idle_00`);
+  }
 
   async init(host: HTMLElement, w: World): Promise<void> {
-    this.lw = w.data.config.world.width;
-    this.lh = w.data.config.world.height;
     await this.app.init({
       background: 0x5fa83a,
       resizeTo: host,
@@ -31,15 +55,16 @@ export class Renderer {
       autoDensity: true,
     });
     host.appendChild(this.app.canvas);
+    await this.loadArt();
     this.world = new Container();
     this.app.stage.addChild(this.world);
     const g = new Graphics();
-    const gy = w.data.config.world.groundY;
-    g.rect(0, gy - 10, this.lw, this.lh - gy + 10).fill(0x3f7f2e);
-    g.rect(0, gy + 6, this.lw, 40).fill(0xa8a39a);
+    g.rect(0, BAND_FAR_Y - 60, this.lw, this.lh - BAND_FAR_Y + 60).fill(0x587a3e);
+    g.rect(0, BAND_FAR_Y - 20, this.lw, 200).fill(0x6e8a4c);
+    this.world.sortableChildren = true;
     this.world.addChild(g, this.base, this.wall, this.pressure);
     this.base
-      .rect(w.data.config.world.baseX - 30, gy - 70, 36, 76)
+      .rect(w.data.config.world.baseX * X_SCALE - 38, 520 - 90, 46, 96)
       .fill(0x7c8fa3)
       .stroke({ color: 0x222222, width: 2 });
     this.app.renderer.on('resize', () => this.fit());
@@ -61,14 +86,23 @@ export class Renderer {
     const root = new Container();
     const body = new Graphics();
     const bar = new Graphics();
-    root.addChild(body, bar);
+    const sprite = new Sprite();
+    sprite.anchor.set(0.5, 1);
+    root.addChild(body, sprite, bar);
     this.world.addChild(root);
-    return { root, body, bar, used: true };
+    return { root, body, bar, sprite, used: true };
   }
 
   private build(v: View, e: Entity): void {
     const d = e.def;
     v.body.clear();
+    v.body.visible = true;
+    v.sprite.visible = false;
+    if (this.texFor(e.kind, 'idle')) {
+      v.body.visible = false;
+      v.sprite.visible = true;
+      return;
+    }
     v.body
       .rect(-d.width / 2, -d.height, d.width, d.height)
       .fill(d.color)
@@ -84,7 +118,7 @@ export class Renderer {
   }
 
   render(w: World, alpha: number): void {
-    const gy = w.data.config.world.groundY;
+    const gy = 520;
     for (const v of this.views.values()) v.used = false;
     const list = w.stress.length ? w.entities.concat(w.stress) : w.entities;
     for (const e of list) {
@@ -98,15 +132,27 @@ export class Renderer {
       const x = e.prevX + (e.x - e.prevX) * alpha;
       const f = w.data.config.feel;
       const drop = (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
-      v.root.position.set(x, gy - drop + (e.id % 3) * 5); // small depth stagger so lined-up units stay readable
-      v.root.scale.x = e.team === 'zombie' ? 1 : -1;
+      const dep = depthOf(e.id);
+      const p = project(dep, x + (((e.id * 7) % 13) / 12 - 0.5) * MAX_JITTER_X);
+      v.root.position.set(p.x, p.y - drop * p.scale);
+      v.root.zIndex = Math.round(p.z * 1000);
+      // Sprites face right in the art. Zombies move left, so they are mirrored; player units face right.
+      const face = e.team === 'zombie' ? -1 : 1;
+      v.root.scale.set(p.scale * face, p.scale);
+      if (v.sprite.visible) {
+        const t = this.texFor(e.kind, poseOf(e));
+        if (t) v.sprite.texture = t;
+        const bob = e.def.speed > 0 && !e.dead ? Math.sin(w.time * 9 + e.id) * 2 : 0;
+        v.sprite.y = bob;
+      }
       v.root.alpha = e.dead ? Math.max(0, e.fade / w.data.config.feel.deathFade) : 1;
-      v.body.alpha = e.hitFlash > 0 ? 0.55 : 1;
+      v.body.alpha = v.sprite.alpha = e.hitFlash > 0 ? 0.55 : 1;
       v.bar.clear();
       if (!e.dead && e.hp < e.maxHp) {
         const bw = Math.max(20, e.def.width);
-        v.bar.rect(-bw / 2, -e.def.height - 9, bw, 4).fill(0x000000);
-        v.bar.rect(-bw / 2, -e.def.height - 9, bw * Math.max(0, e.hp / e.maxHp), 4).fill(e.team === 'player' ? 0x6bd36b : 0xd8343a);
+        const by = v.sprite.visible ? -118 : -e.def.height - 9;
+        v.bar.rect(-bw / 2, by, bw, 4).fill(0x000000);
+        v.bar.rect(-bw / 2, by, bw * Math.max(0, e.hp / e.maxHp), 4).fill(e.team === 'player' ? 0x6bd36b : 0xd8343a);
       }
     }
     for (const [id, v] of this.views) {
@@ -122,7 +168,7 @@ export class Renderer {
     this.pressure.clear();
     if (w.status === 'playing' && pr.level > 0) {
       const col = pr.urgent ? 0xff2a2a : 0xffb02a;
-      if (w.wallHp > 0) this.pressure.ellipse(cfg.wallX, gy - 40, 34, 64).fill({ color: 0xff2a2a, alpha: 0.15 + 0.45 * pr.level });
+      if (w.wallHp > 0) this.pressure.ellipse(cfg.wallX * X_SCALE, gy, 40, 120).fill({ color: 0xff2a2a, alpha: 0.15 + 0.45 * pr.level });
       const pulse = pr.urgent ? 0.8 + 0.2 * Math.sin(w.time * 14) : 1;
       const ax = this.lw - 24;
       const ay = gy - 20;
@@ -133,32 +179,43 @@ export class Renderer {
     }
     const f = w.wallHp / w.wallMaxHp;
     this.wall.clear();
+    const wx = cfg.wallX * X_SCALE;
+    const top = BAND_FAR_Y - 30;
+    const bot = 625;
     // Frontline marker: a sandbag line where Shield troopers land.
-    this.wall.roundRect(cfg.wallX + 28, gy - 4, 24, 6, 3).fill({ color: 0xb79c6a, alpha: 0.85 });
-    this.wall.roundRect(cfg.wallX + 34, gy - 10, 12, 6, 3).fill({ color: 0xa08650, alpha: 0.85 });
+    for (let y = top + 20; y < bot; y += 44) this.wall.roundRect(wx + 40, y, 26, 8, 4).fill({ color: 0xb79c6a, alpha: 0.7 });
 
     if (w.wallHp > 0) {
-      const h = 60 + 20 * f;
       const fe = w.data.config.feel;
       const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
-      const x0 = cfg.wallX - 8 + sx;
+      const x0 = wx - 12 + sx;
+      const h = bot - top;
+      // Band-wide palisade: front face plus a lighter top face.
+      this.wall.rect(x0, top, 24, h).fill(0xc9a96b).stroke({ color: 0x222222, width: 2 });
       this.wall
-        .rect(x0, gy - h, 16, h)
-        .fill(0xc9a96b)
+        .poly([x0, top, x0 + 24, top, x0 + 34, top - 14, x0 + 10, top - 14])
+        .fill(0xe0c88c)
         .stroke({ color: 0x222222, width: 2 });
+      for (let y = top + 30; y < bot; y += 30)
+        this.wall
+          .moveTo(x0, y)
+          .lineTo(x0 + 24, y)
+          .stroke({ color: 0x8a7040, width: 1 });
       // Crack overlays at the configured HP thresholds.
       if (f <= fe.crackThresholds[0])
         this.wall
-          .moveTo(x0 + 2, gy - h + 8)
-          .lineTo(x0 + 10, gy - h * 0.6)
-          .lineTo(x0 + 5, gy - h * 0.4)
-          .stroke({ color: 0x3a2a14, width: 2 });
+          .moveTo(x0 + 3, top + 20)
+          .lineTo(x0 + 18, top + h * 0.35)
+          .lineTo(x0 + 8, top + h * 0.55)
+          .lineTo(x0 + 16, top + h * 0.8)
+          .stroke({ color: 0x3a2a14, width: 3 });
       if (f <= fe.crackThresholds[1])
         this.wall
-          .moveTo(x0 + 14, gy - h * 0.9)
-          .lineTo(x0 + 6, gy - h * 0.5)
-          .lineTo(x0 + 12, gy - 6)
-          .stroke({ color: 0x3a2a14, width: 3 });
+          .moveTo(x0 + 20, top + h * 0.15)
+          .lineTo(x0 + 6, top + h * 0.45)
+          .lineTo(x0 + 18, top + h * 0.65)
+          .lineTo(x0 + 8, bot - 10)
+          .stroke({ color: 0x3a2a14, width: 4 });
     }
   }
 }
