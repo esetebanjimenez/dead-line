@@ -78,10 +78,16 @@ export class Renderer {
     else v.body.circle(-4, -d.height + 10, 3).fill(0xd8343a); // zombie eye
   }
 
+  /** For the perf overlay: sprite views in use and idle views waiting in the pool. */
+  get viewStats(): { active: number; pooled: number } {
+    return { active: this.views.size, pooled: this.pool.length };
+  }
+
   render(w: World, alpha: number): void {
     const gy = w.data.config.world.groundY;
     for (const v of this.views.values()) v.used = false;
-    for (const e of w.entities) {
+    const list = w.stress.length ? w.entities.concat(w.stress) : w.entities;
+    for (const e of list) {
       let v = this.views.get(e.id);
       if (!v) {
         v = this.acquire();

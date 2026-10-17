@@ -49,6 +49,8 @@ export interface World {
   globalCd: number;
   wallShake: number;
   status: Status;
+  /** Render-only dummies for `?stress=N` load testing. The sim never reads or updates them. */
+  stress: Entity[];
 }
 
 export function createWorld(data: GameData): World {
@@ -76,6 +78,7 @@ export function createWorld(data: GameData): World {
     globalCd: 0,
     wallShake: 0,
     status: 'playing',
+    stress: [],
   };
 }
 
@@ -150,4 +153,41 @@ export function tryDeploy(w: World, kind: string): DeployResult {
 
 export function deploy(w: World, kind: string): boolean {
   return tryDeploy(w, kind) === 'ok';
+}
+
+/** Fill `w.stress` with `n` render-only dummies (mixed kinds) for performance testing. No effect on the sim. */
+export function fillStress(w: World, n: number): void {
+  const kinds = ['shambler', 'rifleman', 'shield'];
+  const cfg = w.data.config.world;
+  w.stress = [];
+  for (let i = 0; i < n; i++) {
+    const kind = kinds[i % kinds.length];
+    const def = unitDef(w, kind);
+    const x = cfg.baseX + 40 + ((i * 97) % (cfg.spawnX - cfg.baseX - 80));
+    w.stress.push({
+      id: 1_000_000 + i,
+      team: def.team,
+      kind,
+      def,
+      x,
+      prevX: x,
+      hp: def.hp,
+      maxHp: def.hp,
+      cooldown: 0,
+      windupLeft: -1,
+      hitFlash: 0,
+      dead: false,
+      fade: 0,
+      age: 1,
+    });
+  }
+}
+
+/** Gently sway the dummies so interpolation and sprite updates are exercised. */
+export function stressStep(w: World): void {
+  for (const e of w.stress) {
+    e.prevX = e.x;
+    e.x += Math.sin(w.time * 2 + e.id) * 0.8;
+    e.hitFlash = Math.sin(w.time * 5 + e.id) > 0.95 ? 0.1 : 0;
+  }
 }

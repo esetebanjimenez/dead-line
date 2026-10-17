@@ -13,7 +13,7 @@ export class PerfOverlay {
       if (e.key.toLowerCase() === 'p') this.el.style.display = this.el.style.display === 'block' ? 'none' : 'block';
     });
   }
-  frame(w: World): void {
+  frame(w: World, views?: { active: number; pooled: number }): void {
     this.frames++;
     const now = performance.now();
     if (now - this.last >= 500) {
@@ -21,8 +21,8 @@ export class PerfOverlay {
       this.frames = 0;
       this.last = now;
       if (this.el.style.display === 'block') {
-        const alive = w.entities.filter((e) => !e.dead).length;
-        this.el.textContent = `fps ${this.fps}\nentities ${alive}/${w.data.config.world.entityCap}\nsim ${this.simMs.toFixed(2)} ms/tick`;
+        const alive = w.entities.filter((e) => !e.dead).length + w.stress.length;
+        this.el.textContent = `fps ${this.fps}\nentities ${alive}/${w.data.config.world.entityCap}\nsim ${this.simMs.toFixed(2)} ms/tick${views ? `\nviews ${views.active} active, ${views.pooled} pooled (${views.active + views.pooled} total)` : ''}${w.stress.length ? `\nSTRESS ${w.stress.length}` : ''}`;
       }
     }
   }

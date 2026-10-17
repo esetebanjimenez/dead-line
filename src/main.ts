@@ -1,19 +1,25 @@
 import { gameData, validateData } from './data';
-import { createWorld, step, TICK_DT, type World } from './sim';
+import { createWorld, fillStress, step, stressStep, TICK_DT, type World } from './sim';
 import { Renderer } from './render/renderer';
 import { PerfOverlay } from './render/perf';
 import { Hud } from './ui/hud';
 
 async function main(): Promise<void> {
   validateData(gameData);
-  let world: World = createWorld(gameData);
+  const stressN = Math.min(400, Math.max(0, Number(new URLSearchParams(location.search).get('stress')) || 0));
+  const newWorld = (): World => {
+    const w = createWorld(gameData);
+    if (stressN) fillStress(w, stressN);
+    return w;
+  };
+  let world: World = newWorld();
   const renderer = new Renderer();
   await renderer.init(document.getElementById('stage')!, world);
   const perf = new PerfOverlay();
   const hud: Hud = new Hud(
     () => world,
     () => {
-      world = createWorld(gameData);
+      world = newWorld();
       hud.reset();
     },
   );
@@ -28,6 +34,7 @@ async function main(): Promise<void> {
     let steps = 0;
     while (acc >= TICK_DT && steps < 5) {
       step(world);
+      if (stressN) stressStep(world);
       acc -= TICK_DT;
       steps++;
     }
@@ -35,7 +42,7 @@ async function main(): Promise<void> {
     if (steps) perf.simMs = (performance.now() - t0) / steps;
     renderer.render(world, Math.min(1, acc / TICK_DT));
     hud.update(world);
-    perf.frame(world);
+    perf.frame(world, renderer.viewStats);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
