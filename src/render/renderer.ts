@@ -127,6 +127,10 @@ export class Renderer {
     }
     const f = w.wallHp / w.wallMaxHp;
     this.wall.clear();
+    // Frontline marker: a sandbag line where Shield troopers land.
+    this.wall.roundRect(cfg.wallX + 28, gy - 4, 24, 6, 3).fill({ color: 0xb79c6a, alpha: 0.85 });
+    this.wall.roundRect(cfg.wallX + 34, gy - 10, 12, 6, 3).fill({ color: 0xa08650, alpha: 0.85 });
+
     if (w.wallHp > 0) {
       const h = 60 + 20 * f;
       const fe = w.data.config.feel;

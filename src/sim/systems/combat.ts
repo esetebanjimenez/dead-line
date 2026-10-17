@@ -14,17 +14,21 @@ function findTarget(w: World, e: Entity): Target | null {
     }
     return best ? { kind: 'entity', e: best } : null;
   }
-  if (w.wallHp > 0) {
-    if (e.x - cfg.wallX <= r) return { kind: 'wall' };
-    return null;
-  }
-  let best: Entity | null = null;
-  for (const o of w.entities) {
-    if (o.dead || o.team !== 'player' || o.x >= e.x) continue;
-    if (e.x - o.x > r) continue;
-    if (!best || o.x > best.x) best = o;
-  }
-  if (best) return { kind: 'entity', e: best };
+  // Zombies hit the nearest thing in their path: frontline units (in front of the wall), then the wall, then units behind it, then the base.
+  const nearestUnit = (front: boolean): Entity | null => {
+    let best: Entity | null = null;
+    for (const o of w.entities) {
+      if (o.dead || o.team !== 'player' || o.x >= e.x) continue;
+      if (o.x > cfg.wallX !== front || e.x - o.x > r) continue;
+      if (!best || o.x > best.x) best = o;
+    }
+    return best;
+  };
+  const front = nearestUnit(true);
+  if (front) return { kind: 'entity', e: front };
+  if (w.wallHp > 0) return e.x - cfg.wallX <= r ? { kind: 'wall' } : null;
+  const back = nearestUnit(false);
+  if (back) return { kind: 'entity', e: back };
   if (e.x - cfg.baseX <= r) return { kind: 'base' };
   return null;
 }

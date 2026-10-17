@@ -16,7 +16,7 @@ export function validateData(d: GameData): void {
     if (u.team === 'player') {
       num(u.maxCharges, `${u.id}.maxCharges`, 1);
       num(u.chargeRefill, `${u.id}.chargeRefill`, 0.1);
-      num(u.holdOffset, `${u.id}.holdOffset`);
+      num(u.holdOffset, `${u.id}.holdOffset`, -200); // negative = frontline, in front of the wall
       num(u.deployCooldown, `${u.id}.deployCooldown`);
     }
   }

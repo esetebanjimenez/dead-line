@@ -33,7 +33,7 @@ export const units: UnitDef[] = [
     windup: 0.2,
     speed: 0,
     knockback: 0,
-    holdOffset: 14,
+    holdOffset: -40, // frontline: 40px in front of the wall, toward the zombies
     maxCharges: 3,
     chargeRefill: 14,
     deployCooldown: 1.0,
