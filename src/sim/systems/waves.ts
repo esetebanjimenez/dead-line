@@ -2,8 +2,7 @@ import { aliveCount, spawn, type World } from '../world';
 
 function startWave(w: World): void {
   const q = [];
-  for (const g of w.data.waves[w.wave].groups)
-    for (let i = 0; i < g.count; i++) q.push({ t: g.delay + i * g.interval, kind: g.kind });
+  for (const g of w.data.waves[w.wave].groups) for (let i = 0; i < g.count; i++) q.push({ t: g.delay + i * g.interval, kind: g.kind });
   q.sort((a, b) => a.t - b.t);
   w.spawnQueue = q;
   w.waveClock = 0;
@@ -32,14 +31,24 @@ export function waveSystem(w: World, dt: number): void {
         spawn(w, s.kind, w.data.config.world.spawnX);
       }
       if (w.spawnQueue.length === 0 && zombiesAlive(w) === 0) {
-        if (w.wave >= w.data.waves.length - 1) { w.phase = 'done'; w.status = 'won'; }
-        else { w.phase = 'pause'; w.phaseTimer = p.wavePause; }
+        w.scrap += w.data.waves[w.wave].payout;
+        if (w.wave >= w.data.waves.length - 1) {
+          w.phase = 'done';
+          w.status = 'won';
+        } else {
+          w.phase = 'pause';
+          w.phaseTimer = p.wavePause;
+        }
       }
       break;
     }
     case 'pause':
       w.phaseTimer -= dt;
-      if (w.phaseTimer <= 0) { w.wave++; w.phase = 'banner'; w.phaseTimer = p.bannerTime; }
+      if (w.phaseTimer <= 0) {
+        w.wave++;
+        w.phase = 'banner';
+        w.phaseTimer = p.bannerTime;
+      }
       break;
     case 'done':
       break;

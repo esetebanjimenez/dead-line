@@ -5,7 +5,7 @@ export interface UnitDef {
   team: Team;
   name: string;
   hp: number;
-  damage: number;
+  dps: number; // damage per hit = dps * attackInterval
   range: number;
   attackInterval: number; // seconds between attacks
   windup: number; // seconds from attack start to damage landing
@@ -13,6 +13,8 @@ export interface UnitDef {
   knockback: number; // pixels pushed onto a zombie hit by this unit
   knockbackImmune?: boolean;
   holdOffset?: number; // player only: stops this far behind the wall
+  deployCooldown?: number; // player only: seconds before this button can be used again
+  reward?: number; // zombie only: Scrap dropped on death
   maxCharges?: number; // player only
   chargeRefill?: number; // player only: seconds per charge
   color: number; // placeholder sprite colour
@@ -27,6 +29,7 @@ export interface WaveGroup {
   delay: number; // seconds after wave start
 }
 export interface WaveDef {
+  payout: number; // Scrap on clear
   groups: WaveGroup[];
 }
 
@@ -42,6 +45,8 @@ export interface GameConfig {
     spawnX: number;
     spawnPlayerX: number;
     entityCap: number;
+    maxUnitsAlive: number;
+    globalDeployCooldown: number;
   };
   feel: {
     hitFlash: number;
@@ -54,8 +59,10 @@ export interface GameConfig {
     wallShakePx: number;
     wallShakeTime: number;
     crackThresholds: [number, number];
-    pressureRange: number; // zombies within this distance of the wall count as pressure
-    pressureHigh: number; // pressure count that triggers the urgent warning
+    pressureRange: number; // glow and arrow start to brighten at this distance from the wall
+    pressureRedNearest: number; // urgent when the nearest zombie is this close
+    pressureRedCountRange: number; // urgent when pressureRedCount zombies are within this distance
+    pressureRedCount: number;
   };
   pacing: { bannerTime: number; wavePause: number };
 }

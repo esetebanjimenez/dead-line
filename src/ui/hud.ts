@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { deploy } from '../sim';
+import { tryDeploy } from '../sim';
 import { onPress } from '../input/pointer';
 
 export class Hud {
@@ -7,9 +7,11 @@ export class Hud {
   private bannerEl = document.getElementById('banner')!;
   private endEl = document.getElementById('end')!;
   private lastWave = -1;
-  private pressureEl = document.getElementById('pressure')!;
 
-  constructor(private getWorld: () => World, onRestart: () => void) {
+  constructor(
+    private getWorld: () => World,
+    onRestart: () => void,
+  ) {
     const hud = document.getElementById('hud')!;
     const w = getWorld();
     let key = 1;
@@ -20,10 +22,16 @@ export class Hud {
       const n = el.querySelector('.n') as HTMLElement;
       const fill = el.querySelector('.fill') as HTMLElement;
       const press = () => {
-        if (!deploy(this.getWorld(), u.id)) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+        if (tryDeploy(this.getWorld(), u.id) !== 'ok') {
+          el.classList.remove('shake');
+          void el.offsetWidth;
+          el.classList.add('shake');
+        }
       };
       onPress(el, press);
-      window.addEventListener('keydown', (e) => { if (e.key === String(key)) press(); });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === String(key)) press();
+      });
       key++;
       hud.appendChild(el);
       this.buttons.set(u.id, { el, n, fill });
@@ -52,17 +60,11 @@ export class Hud {
       const list = [...counts].map(([k, n]) => `${n}x ${w.data.units.find((u) => u.id === k)!.name}`).join(', ');
       this.bannerEl.innerHTML = `WAVE ${w.wave + 1}<div style="font-size:16px;font-weight:700">Incoming: ${list}</div>`;
     }
-    // Pressure: how many zombies are close to the wall. Urgent style above the configured threshold.
-    const fe = w.data.config.feel;
-    const wx = w.data.config.world.wallX;
-    let pressure = 0;
-    for (const e of w.entities) if (!e.dead && e.team === 'zombie' && e.x - wx <= fe.pressureRange) pressure++;
-    this.pressureEl.style.display = pressure > 0 && w.status === 'playing' ? 'block' : 'none';
-    this.pressureEl.textContent = `\u26A0 ${pressure}`;
-    this.pressureEl.classList.toggle('high', pressure >= fe.pressureHigh);
     this.endEl.style.display = w.status === 'playing' ? 'none' : 'flex';
     if (w.status !== 'playing') document.getElementById('endtext')!.textContent = w.status === 'won' ? 'Line held!' : 'Base overrun';
   }
 
-  reset(): void { this.lastWave = -1; }
+  reset(): void {
+    this.lastWave = -1;
+  }
 }

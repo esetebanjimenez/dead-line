@@ -14,6 +14,8 @@ export function step(w: World, dt: number = TICK_DT): void {
   for (const e of w.entities) e.prevX = e.x;
   w.surgeTimer = Math.max(0, w.surgeTimer - dt);
   w.wallShake = Math.max(0, w.wallShake - dt);
+  w.globalCd = Math.max(0, w.globalCd - dt);
+  for (const k of Object.keys(w.deployCd)) w.deployCd[k] = Math.max(0, w.deployCd[k] - dt);
   for (const e of w.entities) e.age += dt;
   chargeSystem(w, dt);
   waveSystem(w, dt);

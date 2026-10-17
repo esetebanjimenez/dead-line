@@ -30,7 +30,7 @@ function findTarget(w: World, e: Entity): Target | null {
 }
 
 function applyHit(w: World, attacker: Entity, t: Target): void {
-  const dmg = attacker.def.damage;
+  const dmg = attacker.def.dps * attacker.def.attackInterval;
   if (t.kind === 'wall') {
     const before = w.wallHp;
     w.wallShake = w.data.config.feel.wallShakeTime;
@@ -42,21 +42,19 @@ function applyHit(w: World, attacker: Entity, t: Target): void {
     const v = t.e;
     v.hp -= dmg;
     v.hitFlash = w.data.config.feel.hitFlash;
-    if (v.team === 'zombie' && !v.def.knockbackImmune)
-      v.x = Math.min(w.data.config.world.spawnX, v.x + attacker.def.knockback);
-    if (v.hp <= 0) { v.dead = true; v.fade = w.data.config.feel.deathFade; }
+    if (v.team === 'zombie' && !v.def.knockbackImmune) v.x = Math.min(w.data.config.world.spawnX, v.x + attacker.def.knockback);
+    if (v.hp <= 0) {
+      v.dead = true;
+      v.fade = w.data.config.feel.deathFade;
+      if (v.team === 'zombie') w.scrap += v.def.reward ?? 0;
+    }
   }
 }
 
 export function combatSystem(w: World, dt: number): void {
-  const cfg = w.data.config.world;
-  // Player units of the same kind line up behind each other instead of stacking on one spot.
-  const slots = new Map<string, number>();
   const speedMult = w.surgeTimer > 0 ? w.data.config.feel.surgeSpeedMult : 1;
   for (const e of w.entities) {
     if (e.dead) continue;
-    let slot = 0;
-    if (e.team === 'player') { slot = slots.get(e.kind) ?? 0; slots.set(e.kind, slot + 1); }
     e.cooldown = Math.max(0, e.cooldown - dt);
     e.hitFlash = Math.max(0, e.hitFlash - dt);
     const t = findTarget(w, e);
@@ -76,9 +74,6 @@ export function combatSystem(w: World, dt: number): void {
       continue;
     }
     if (e.team === 'zombie') e.x -= e.def.speed * speedMult * dt;
-    else {
-      const limit = cfg.wallX - (e.def.holdOffset ?? 0) - slot * w.data.config.feel.unitSpacing;
-      if (e.x < limit) e.x = Math.min(limit, e.x + e.def.speed * dt);
-    }
+    // Player units hold position (they spawn at their hold slot).
   }
 }

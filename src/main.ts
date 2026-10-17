@@ -10,7 +10,13 @@ async function main(): Promise<void> {
   const renderer = new Renderer();
   await renderer.init(document.getElementById('stage')!, world);
   const perf = new PerfOverlay();
-  const hud: Hud = new Hud(() => world, () => { world = createWorld(gameData); hud.reset(); });
+  const hud: Hud = new Hud(
+    () => world,
+    () => {
+      world = createWorld(gameData);
+      hud.reset();
+    },
+  );
 
   let acc = 0;
   let last = performance.now();
@@ -20,7 +26,11 @@ async function main(): Promise<void> {
     last = now;
     const t0 = performance.now();
     let steps = 0;
-    while (acc >= TICK_DT && steps < 5) { step(world); acc -= TICK_DT; steps++; }
+    while (acc >= TICK_DT && steps < 5) {
+      step(world);
+      acc -= TICK_DT;
+      steps++;
+    }
     if (steps) perf.simMs = (performance.now() - t0) / steps;
     renderer.render(world, Math.min(1, acc / TICK_DT));
     hud.update(world);

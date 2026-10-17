@@ -1,7 +1,12 @@
 import { Application, Container, Graphics } from 'pixi.js';
-import type { Entity, World } from '../sim';
+import { computePressure, type Entity, type World } from '../sim';
 
-interface View { root: Container; body: Graphics; bar: Graphics; used: boolean }
+interface View {
+  root: Container;
+  body: Graphics;
+  bar: Graphics;
+  used: boolean;
+}
 
 /** Placeholder renderer: coloured boxes with health bars. Reads sim state only. */
 export class Renderer {
@@ -11,13 +16,20 @@ export class Renderer {
   private pool: View[] = [];
   private wall = new Graphics();
   private base = new Graphics();
+  private pressure = new Graphics();
   private lw = 1000;
   private lh = 400;
 
   async init(host: HTMLElement, w: World): Promise<void> {
     this.lw = w.data.config.world.width;
     this.lh = w.data.config.world.height;
-    await this.app.init({ background: 0x5fa83a, resizeTo: host, antialias: true, resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true });
+    await this.app.init({
+      background: 0x5fa83a,
+      resizeTo: host,
+      antialias: true,
+      resolution: Math.min(window.devicePixelRatio || 1, 2),
+      autoDensity: true,
+    });
     host.appendChild(this.app.canvas);
     this.world = new Container();
     this.app.stage.addChild(this.world);
@@ -25,8 +37,11 @@ export class Renderer {
     const gy = w.data.config.world.groundY;
     g.rect(0, gy - 10, this.lw, this.lh - gy + 10).fill(0x3f7f2e);
     g.rect(0, gy + 6, this.lw, 40).fill(0xa8a39a);
-    this.world.addChild(g, this.base, this.wall);
-    this.base.rect(w.data.config.world.baseX - 30, gy - 70, 36, 76).fill(0x7c8fa3).stroke({ color: 0x222222, width: 2 });
+    this.world.addChild(g, this.base, this.wall, this.pressure);
+    this.base
+      .rect(w.data.config.world.baseX - 30, gy - 70, 36, 76)
+      .fill(0x7c8fa3)
+      .stroke({ color: 0x222222, width: 2 });
     this.app.renderer.on('resize', () => this.fit());
     this.fit();
   }
@@ -39,7 +54,10 @@ export class Renderer {
 
   private acquire(): View {
     const v = this.pool.pop();
-    if (v) { v.root.visible = true; return v; }
+    if (v) {
+      v.root.visible = true;
+      return v;
+    }
     const root = new Container();
     const body = new Graphics();
     const bar = new Graphics();
@@ -51,8 +69,12 @@ export class Renderer {
   private build(v: View, e: Entity): void {
     const d = e.def;
     v.body.clear();
-    v.body.rect(-d.width / 2, -d.height, d.width, d.height).fill(d.color).stroke({ color: 0x222222, width: 2 });
-    if (e.team === 'player') v.body.rect(-d.width / 2, -d.height, d.width, 5).fill(0xd8343a); // team red band
+    v.body
+      .rect(-d.width / 2, -d.height, d.width, d.height)
+      .fill(d.color)
+      .stroke({ color: 0x222222, width: 2 });
+    if (e.team === 'player')
+      v.body.rect(-d.width / 2, -d.height, d.width, 5).fill(0xd8343a); // team red band
     else v.body.circle(-4, -d.height + 10, 3).fill(0xd8343a); // zombie eye
   }
 
@@ -61,7 +83,11 @@ export class Renderer {
     for (const v of this.views.values()) v.used = false;
     for (const e of w.entities) {
       let v = this.views.get(e.id);
-      if (!v) { v = this.acquire(); this.build(v, e); this.views.set(e.id, v); }
+      if (!v) {
+        v = this.acquire();
+        this.build(v, e);
+        this.views.set(e.id, v);
+      }
       v.used = true;
       const x = e.prevX + (e.x - e.prevX) * alpha;
       const f = w.data.config.feel;
@@ -78,9 +104,27 @@ export class Renderer {
       }
     }
     for (const [id, v] of this.views) {
-      if (!v.used) { v.root.visible = false; this.pool.push(v); this.views.delete(id); }
+      if (!v.used) {
+        v.root.visible = false;
+        this.pool.push(v);
+        this.views.delete(id);
+      }
     }
     const cfg = w.data.config.world;
+    // Pressure cue: red glow on the wall plus a row-edge arrow that brightens as zombies close in.
+    const pr = computePressure(w);
+    this.pressure.clear();
+    if (w.status === 'playing' && pr.level > 0) {
+      const col = pr.urgent ? 0xff2a2a : 0xffb02a;
+      if (w.wallHp > 0) this.pressure.ellipse(cfg.wallX, gy - 40, 34, 64).fill({ color: 0xff2a2a, alpha: 0.15 + 0.45 * pr.level });
+      const pulse = pr.urgent ? 0.8 + 0.2 * Math.sin(w.time * 14) : 1;
+      const ax = this.lw - 24;
+      const ay = gy - 20;
+      this.pressure
+        .poly([ax - 26, ay, ax + 8, ay - 20, ax + 8, ay + 20])
+        .fill({ color: col, alpha: (0.3 + 0.7 * pr.level) * pulse })
+        .stroke({ color: 0x222222, width: 2 });
+    }
     const f = w.wallHp / w.wallMaxHp;
     this.wall.clear();
     if (w.wallHp > 0) {
@@ -88,10 +132,23 @@ export class Renderer {
       const fe = w.data.config.feel;
       const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
       const x0 = cfg.wallX - 8 + sx;
-      this.wall.rect(x0, gy - h, 16, h).fill(0xc9a96b).stroke({ color: 0x222222, width: 2 });
+      this.wall
+        .rect(x0, gy - h, 16, h)
+        .fill(0xc9a96b)
+        .stroke({ color: 0x222222, width: 2 });
       // Crack overlays at the configured HP thresholds.
-      if (f <= fe.crackThresholds[0]) this.wall.moveTo(x0 + 2, gy - h + 8).lineTo(x0 + 10, gy - h * 0.6).lineTo(x0 + 5, gy - h * 0.4).stroke({ color: 0x3a2a14, width: 2 });
-      if (f <= fe.crackThresholds[1]) this.wall.moveTo(x0 + 14, gy - h * 0.9).lineTo(x0 + 6, gy - h * 0.5).lineTo(x0 + 12, gy - 6).stroke({ color: 0x3a2a14, width: 3 });
+      if (f <= fe.crackThresholds[0])
+        this.wall
+          .moveTo(x0 + 2, gy - h + 8)
+          .lineTo(x0 + 10, gy - h * 0.6)
+          .lineTo(x0 + 5, gy - h * 0.4)
+          .stroke({ color: 0x3a2a14, width: 2 });
+      if (f <= fe.crackThresholds[1])
+        this.wall
+          .moveTo(x0 + 14, gy - h * 0.9)
+          .lineTo(x0 + 6, gy - h * 0.5)
+          .lineTo(x0 + 12, gy - 6)
+          .stroke({ color: 0x3a2a14, width: 3 });
     }
   }
 }
