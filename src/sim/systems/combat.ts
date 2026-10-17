@@ -54,6 +54,10 @@ function applyHit(w: World, attacker: Entity, t: Target): void {
     (attacker.kind === 'tower' && w.towerTier === 2 ? w.data.config.world.towerTier2.damageMult : 1);
   if (t.kind === 'wall') {
     const before = w.wallHp;
+    if (attacker.kind === 'ram') {
+      attacker.hitWall = true;
+      w.ramWallHits[w.wave] = (w.ramWallHits[w.wave] ?? 0) + 1;
+    }
     w.wallShake = w.data.config.feel.wallShakeTime;
     w.wallHp = Math.max(0, w.wallHp - dmg);
     if (before > 0 && w.wallHp === 0) w.surgeTimer = w.data.config.feel.surgeDuration;

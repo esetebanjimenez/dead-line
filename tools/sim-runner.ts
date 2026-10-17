@@ -66,6 +66,9 @@ function play(bot: Bot, seed: number) {
   const ramBorn = new Map<number, number>();
   const ramTimes: number[][] = gameData.waves.map(() => []); // seconds from spawn to reaching the wall, per wave
   const ramReached = new Set<number>();
+  const ramsSpawned: number[] = gameData.waves.map(() => 0);
+  const ramsKilledBeforeWall: number[] = gameData.waves.map(() => 0);
+  const ramDeadSeen = new Set<number>();
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);
     // All bots spend Scrap on wall repair between waves (spam never repairs).
@@ -85,7 +88,14 @@ function play(bot: Bot, seed: number) {
         lost[w.wave]++;
       }
       if (e.kind === 'ram') {
-        if (!ramBorn.has(e.id)) ramBorn.set(e.id, w.time);
+        if (!ramBorn.has(e.id)) {
+          ramBorn.set(e.id, w.time);
+          ramsSpawned[w.wave]++;
+        }
+        if (e.dead && !e.hitWall && !ramDeadSeen.has(e.id)) {
+          ramDeadSeen.add(e.id);
+          ramsKilledBeforeWall[w.wave]++;
+        }
         if (!ramReached.has(e.id) && e.x - e.def.range <= gameData.config.world.wallX + 1) {
           ramReached.add(e.id);
           ramTimes[w.wave].push(w.time - ramBorn.get(e.id)!);
@@ -108,6 +118,9 @@ function play(bot: Bot, seed: number) {
     peakScrapW,
     peakEnt,
     ramTimes,
+    ramsSpawned,
+    ramsKilledBeforeWall,
+    ramWallHits: w.ramWallHits,
     status: w.status,
     wave: w.wave + 1,
     wallPct: Math.round((100 * w.wallHp) / w.wallMaxHp),
@@ -151,7 +164,7 @@ for (const [name, bot] of [
     const reached = res.filter((x) => x.waveWall[k] !== undefined);
     const avg = reached.length ? reached.reduce((a, x) => a + x.waveWall[k], 0) / reached.length : 0;
     console.log(
-      `   wave ${k + 1}: cleared=${((100 * reached.length) / N_RUNS).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}% shieldDeaths=${avgOf((x) => x.shieldDeaths[k]).toFixed(1)} unitsLost=${avgOf((x) => x.lost[k]).toFixed(1)} peakScrap=${Math.max(...res.map((x) => x.peakScrapW[k])).toFixed(0)} peakEntities=${Math.max(...res.map((x) => x.peakEnt[k]))} ramToWall=${ramT(k)}`,
+      `   wave ${k + 1}: cleared=${((100 * reached.length) / N_RUNS).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}% shieldDeaths=${avgOf((x) => x.shieldDeaths[k]).toFixed(1)} unitsLost=${avgOf((x) => x.lost[k]).toFixed(1)} peakScrap=${Math.max(...res.map((x) => x.peakScrapW[k])).toFixed(0)} peakEntities=${Math.max(...res.map((x) => x.peakEnt[k]))} ramToWall=${ramT(k)} ramsSpawned=${avgOf((x) => x.ramsSpawned[k]).toFixed(1)} ramWallHits=${avgOf((x) => x.ramWallHits[k]).toFixed(1)} ramsKilledBeforeWall=${avgOf((x) => x.ramsKilledBeforeWall[k]).toFixed(1)}`,
     );
   }
 }

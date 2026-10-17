@@ -19,6 +19,7 @@ export interface Entity {
   fade: number;
   age: number;
   aimId?: number; // target entity of the telegraph (drawing only)
+  hitWall?: boolean; // stats only: true once this entity has landed a hit on the wall (never read by behavior)
   aimX?: number; // set while winding up a puddle attack: where the patch will land
 }
 export interface Puddle {
@@ -67,6 +68,8 @@ export interface World {
   /** Render-only dummies for `?stress=N` load testing. The sim never reads or updates them. */
   stress: Entity[];
   puddles: Puddle[];
+  /** Stats only (read by tools/tests, never by sim behavior): Ram attack hits that landed on the wall, per wave index. */
+  ramWallHits: number[];
 }
 
 export function createWorld(data: GameData): World {
@@ -98,6 +101,7 @@ export function createWorld(data: GameData): World {
     wallShake: 0,
     status: 'playing',
     stress: [],
+    ramWallHits: data.waves.map(() => 0),
     puddles: [],
   };
 }

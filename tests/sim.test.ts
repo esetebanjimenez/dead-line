@@ -491,6 +491,17 @@ describe('leash geometry', () => {
 });
 
 describe('Battering Ram (M3)', () => {
+  it('counts Ram wall hits per wave as a stats-only field', () => {
+    const w = createWorld(gameData);
+    w.phase = 'fighting';
+    const ram = spawn(w, 'ram', gameData.config.world.wallX + 20)!;
+    expect(w.ramWallHits[0]).toBe(0);
+    expect(ram.hitWall).toBeUndefined();
+    for (let i = 0; i < 90; i++) step(w);
+    expect(w.ramWallHits[0]).toBeGreaterThan(0);
+    expect(w.ramWallHits[1]).toBe(0);
+    expect(ram.hitWall).toBe(true);
+  });
   it('ignores player units and attacks only the wall', () => {
     const w = createWorld(gameData);
     w.phase = 'fighting';
