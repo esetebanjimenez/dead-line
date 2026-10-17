@@ -139,6 +139,8 @@ export function tryDeploy(w: World, kind: string): DeployResult {
   if (!c || c.count <= 0) return 'no-charge';
   if (w.globalCd > 0 || (w.deployCd[kind] ?? 0) > 0) return 'cooldown';
   if (livingPlayerUnits(w) >= w.data.config.world.maxUnitsAlive) return 'unit-limit';
+  const cap = unitDef(w, kind).maxAlive;
+  if (cap !== undefined && w.entities.filter((e) => !e.dead && e.kind === kind).length >= cap) return 'unit-limit';
   if (!spawn(w, kind, holdX(w, kind))) return 'entity-cap';
   c.count--;
   w.deployCd[kind] = unitDef(w, kind).deployCooldown ?? 0;

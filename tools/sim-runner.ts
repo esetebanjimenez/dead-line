@@ -33,7 +33,11 @@ function play(bot: Bot, seed: number) {
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);
     step(w);
-    for (const e of w.entities) if (e.kind === 'shield' && e.dead && !dead.has(e.id)) (dead.add(e.id), shieldDeaths[w.wave]++);
+    for (const e of w.entities)
+      if (e.kind === 'shield' && e.dead && !dead.has(e.id)) {
+        dead.add(e.id);
+        shieldDeaths[w.wave]++;
+      }
     if (w.phase === 'pause' && waveWall[w.wave] === undefined) waveWall[w.wave] = (100 * w.wallHp) / w.wallMaxHp;
     if (w.wave === gameData.waves.length - 1) minWall = Math.min(minWall, w.wallHp / w.wallMaxHp);
   }

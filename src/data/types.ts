@@ -12,6 +12,7 @@ export interface UnitDef {
   speed: number; // world units per second
   knockback: number; // pixels pushed onto a zombie hit by this unit
   knockbackImmune?: boolean;
+  maxAlive?: number; // player only: per-type cap on living units
   holdOffset?: number; // player only: stops this far behind the wall
   deployCooldown?: number; // player only: seconds before this button can be used again
   reward?: number; // zombie only: Scrap dropped on death

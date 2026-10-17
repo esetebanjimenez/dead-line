@@ -15,6 +15,7 @@ export const units: UnitDef[] = [
     speed: 0,
     knockback: 8,
     holdOffset: 40,
+    maxAlive: 4,
     maxCharges: 4,
     chargeRefill: 12,
     deployCooldown: 0.5,
@@ -34,6 +35,7 @@ export const units: UnitDef[] = [
     speed: 0,
     knockback: 0,
     holdOffset: -40, // frontline: 40px in front of the wall, toward the zombies
+    maxAlive: 4,
     maxCharges: 3,
     chargeRefill: 11,
     deployCooldown: 1.0,
