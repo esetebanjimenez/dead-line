@@ -58,6 +58,7 @@ export interface GameConfig {
     entityCap: number;
     maxUnitsAlive: number;
     globalDeployCooldown: number;
+    reinforce: { cost: number; cooldown: number }; // M4 Module A: Scrap refills every deploy charge, only during a wave
     advanceSpeed: number; // player units march right from the gate at this speed until an enemy is in range
     leashX: number; // player units never advance past this x; they hold here and return to it after a fight
     exitStagger: number; // seconds between units leaving the gate

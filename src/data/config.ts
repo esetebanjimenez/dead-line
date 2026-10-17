@@ -20,6 +20,7 @@ export const config: GameConfig = {
     exitDelay: { rifleman: 0.3 },
     maxUnitsAlive: 8,
     globalDeployCooldown: 0,
+    reinforce: { cost: 80, cooldown: 20 },
   },
   // From Feel Spec v0.2 (placeholders).
   feel: {

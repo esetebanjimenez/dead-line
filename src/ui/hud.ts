@@ -1,5 +1,5 @@
 import type { World } from '../sim';
-import { tryDeploy, repairWall, buildStructure, skipPause, upgradeWall } from '../sim';
+import { tryDeploy, repairWall, buildStructure, skipPause, upgradeWall, reinforce } from '../sim';
 import { onPress } from '../input/pointer';
 import { keyToSlot } from './keys';
 
@@ -11,6 +11,8 @@ export class Hud {
   private skip!: { el: HTMLButtonElement; n: HTMLElement };
   private tower?: { el: HTMLButtonElement; id: string; cost: number };
   private upgrade!: { el: HTMLButtonElement; n: HTMLElement };
+  private reinforceBtn!: { el: HTMLButtonElement; fill: HTMLElement };
+  private disabled = new Set<string>(); // slot ids whose button is dimmed: clicks and hotkeys are ignored
   private repair!: { el: HTMLButtonElement; n: HTMLElement };
 
   constructor(
@@ -21,10 +23,10 @@ export class Hud {
     const w = getWorld();
     const playerUnits = w.data.units.filter((x) => x.team === 'player' && x.cost === undefined);
     const towerDef = w.data.units.find((x) => x.cost !== undefined);
-    const slots = [...playerUnits.map((x) => x.id), ...(towerDef ? [towerDef.id] : [])];
+    const slots = [...playerUnits.map((x) => x.id), ...(towerDef ? [towerDef.id] : []), 'reinforce'];
     const slotActions = new Map<string, () => void>();
     window.addEventListener('keydown', (e) => {
-      const id = keyToSlot(e.key, slots);
+      const id = keyToSlot(e.key, slots, this.disabled);
       if (id) slotActions.get(id)?.();
     });
     for (const u of playerUnits) {
@@ -64,6 +66,22 @@ export class Hud {
       hud.appendChild(tb);
       this.tower = { el: tb, id: tw.id, cost: tw.cost! };
     }
+    const rf = w.data.config.world.reinforce;
+    const rb = document.createElement('button');
+    rb.className = 'deploy';
+    rb.innerHTML = `<div class="fill"></div><span>Reinforce</span><span class="n cost">${rf.cost}</span><span data-k style="font-size:10px">[${slots.indexOf('reinforce') + 1}]</span>`;
+    const doReinforce = () => {
+      if (rb.classList.contains('empty')) return; // dimmed: ignore
+      if (reinforce(this.getWorld()) !== 'ok') {
+        rb.classList.remove('shake');
+        void rb.offsetWidth;
+        rb.classList.add('shake');
+      }
+    };
+    onPress(rb, doReinforce);
+    slotActions.set('reinforce', doReinforce);
+    hud.appendChild(rb);
+    this.reinforceBtn = { el: rb, fill: rb.querySelector('.fill') as HTMLElement };
     const go = document.createElement('button');
     go.className = 'deploy';
     go.style.display = 'none';
@@ -120,6 +138,14 @@ export class Hud {
       const t = this.tower;
       const built = w.entities.some((e) => !e.dead && e.kind === t.id);
       this.tower.el.classList.toggle('empty', built || w.scrap < t.cost);
+    }
+    {
+      const rf = w.data.config.world.reinforce;
+      const off = w.status !== 'playing' || w.phase !== 'fighting' || w.reinforceCd > 0 || w.scrap < rf.cost;
+      this.reinforceBtn.el.classList.toggle('empty', off);
+      if (off) this.disabled.add('reinforce');
+      else this.disabled.delete('reinforce');
+      this.reinforceBtn.fill.style.setProperty('--p', String(rf.cooldown > 0 ? 1 - w.reinforceCd / rf.cooldown : 1));
     }
     this.skip.el.style.display = w.phase === 'pause' && w.status === 'playing' ? '' : 'none';
     this.skip.n.textContent = `${Math.ceil(w.phaseTimer)}s`;

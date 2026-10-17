@@ -37,6 +37,8 @@ export function validateData(d: GameData): void {
   const c = d.config.world;
   num(c.maxUnitsAlive, 'maxUnitsAlive', 1);
   num(c.globalDeployCooldown, 'globalDeployCooldown');
+  num(c.reinforce?.cost, 'reinforce.cost', 1);
+  num(c.reinforce?.cooldown, 'reinforce.cooldown');
   if (c.entityCap < 1) errs.push('entityCap must be >= 1');
   if (c.wallX <= c.baseX) errs.push('wallX must be right of baseX');
   if (errs.length) throw new Error('Invalid game data:\n - ' + errs.join('\n - '));

@@ -60,6 +60,7 @@ export interface World {
   scrap: number;
   deployCd: Record<string, number>;
   globalCd: number;
+  reinforceCd: number;
   wallShake: number;
   status: Status;
   /** Render-only dummies for `?stress=N` load testing. The sim never reads or updates them. */
@@ -91,6 +92,7 @@ export function createWorld(data: GameData): World {
     scrap: 0,
     deployCd: {},
     globalCd: 0,
+    reinforceCd: 0,
     wallShake: 0,
     status: 'playing',
     stress: [],
@@ -203,6 +205,23 @@ export function upgradeWall(w: World): 'ok' | 'locked' | 'owned' | 'no-scrap' | 
   w.wallTier = 2;
   w.wallMaxHp = t2.hp;
   w.wallHp = Math.min(t2.hp, w.wallHp + t2.hp * t2.upgradeHealFraction);
+  return 'ok';
+}
+
+/** Player action (M4 Module A): during a wave, pay Scrap to refill every deploy charge to max. Has its own cooldown. */
+export function reinforce(w: World): 'ok' | 'no-scrap' | 'cooldown' | 'bad-phase' {
+  const r = w.data.config.world.reinforce;
+  if (w.status !== 'playing' || w.phase !== 'fighting') return 'bad-phase';
+  if (w.reinforceCd > 0) return 'cooldown';
+  if (w.scrap < r.cost) return 'no-scrap';
+  w.scrap -= r.cost;
+  w.reinforceCd = r.cooldown;
+  for (const u of w.data.units) {
+    if (u.team !== 'player' || u.cost !== undefined) continue;
+    const c = w.charges[u.id];
+    c.count = u.maxCharges!;
+    c.timer = 0;
+  }
   return 'ok';
 }
 

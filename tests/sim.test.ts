@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { gameData, validateData } from '../src/data';
 import {
   upgradeWall,
+  reinforce,
   aliveCount,
   computePressure,
   createWorld,
@@ -363,6 +364,11 @@ describe('hotkeys', () => {
     expect(keyToSlot('3', slots)).toBe('sniper');
     expect(keyToSlot('4', slots)).toBe('tower');
     expect(keyToSlot('5', slots)).toBeNull();
+    const withR = [...slots, 'reinforce'];
+    expect(keyToSlot('5', withR)).toBe('reinforce');
+    expect(slotKeyLabel('reinforce', withR)).toBe('5');
+    expect(keyToSlot('5', withR, new Set(['reinforce']))).toBeNull(); // dimmed button ignores its hotkey
+    expect(keyToSlot('4', withR, new Set(['reinforce']))).toBe('tower');
     expect(keyToSlot('r', slots)).toBeNull();
     expect(slotKeyLabel('sniper', slots)).toBe('3');
   });
@@ -472,5 +478,53 @@ describe('Battering Ram (M3)', () => {
   });
   it('free wall repairs fire after waves 5 and 8', () => {
     expect(gameData.config.pacing.freeRepairAfterWaves).toEqual([5, 8]);
+  });
+});
+
+describe('reinforce (M4 module A)', () => {
+  const fighting = () => {
+    const w = createWorld(gameData);
+    w.phase = 'fighting';
+    return w;
+  };
+  it('is refused outside a wave, without Scrap, and on cooldown; config drives cost and cooldown', () => {
+    const cfg = gameData.config.world.reinforce;
+    const w = createWorld(gameData);
+    w.scrap = 500;
+    expect(reinforce(w)).toBe('bad-phase');
+    w.phase = 'fighting';
+    w.scrap = cfg.cost - 1;
+    expect(reinforce(w)).toBe('no-scrap');
+    w.scrap = 500;
+    expect(reinforce(w)).toBe('ok');
+    expect(w.scrap).toBe(500 - cfg.cost);
+    expect(reinforce(w)).toBe('cooldown');
+    expect(w.scrap).toBe(500 - cfg.cost);
+    run(w, cfg.cooldown + 0.1);
+    w.phase = 'fighting';
+    expect(w.reinforceCd).toBe(0);
+    expect(reinforce(w)).toBe('ok');
+  });
+  it('refills every deploy charge to max and resets timers, never touching the Tower', () => {
+    const w = fighting();
+    w.scrap = 200;
+    for (const id of Object.keys(w.charges)) w.charges[id] = { count: 0, timer: 1 };
+    expect(reinforce(w)).toBe('ok');
+    for (const u of gameData.units) {
+      if (u.team !== 'player' || u.cost !== undefined) continue;
+      expect(w.charges[u.id]).toEqual({ count: u.maxCharges, timer: 0 });
+    }
+    expect(w.charges['tower']).toBeUndefined();
+  });
+  it('is refused after game over', () => {
+    const w = fighting();
+    w.scrap = 200;
+    w.status = 'lost';
+    expect(reinforce(w)).toBe('bad-phase');
+  });
+  it('validates config', () => {
+    const bad = structuredClone(gameData);
+    bad.config.world.reinforce.cost = 0;
+    expect(() => validateData(bad)).toThrow(/reinforce.cost/);
   });
 });
