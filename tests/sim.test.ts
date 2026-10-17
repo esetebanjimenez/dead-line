@@ -323,15 +323,15 @@ describe('sniper (M2)', () => {
 });
 
 describe('wall tier 2 (M2)', () => {
-  it('is locked until wave 5, costs 350, adds 50% of 650 HP once, and repairs cost 1.5x', () => {
+  it('is locked until wave 4, costs 350, adds 50% of 650 HP once, and repairs cost 1.5x', () => {
     const w = createWorld(gameData);
     w.phase = 'pause';
     w.scrap = 500;
-    w.wave = 4;
+    w.wave = 3;
     expect(upgradeWall(w)).toBe('locked');
     expect(w.wallTier).toBe(1);
     expect(w.scrap).toBe(500);
-    w.wave = 5;
+    w.wave = 4;
     w.wallHp = 100;
     expect(upgradeWall(w)).toBe('ok');
     expect(w.scrap).toBe(150);
@@ -345,7 +345,7 @@ describe('wall tier 2 (M2)', () => {
   });
   it('cannot be bought mid-wave or without Scrap', () => {
     const w = createWorld(gameData);
-    w.wave = 5;
+    w.wave = 4;
     w.scrap = 500;
     w.phase = 'fighting';
     expect(upgradeWall(w)).toBe('bad-phase');
@@ -444,5 +444,33 @@ describe('leash geometry', () => {
     const hp = a.hp;
     for (let i = 0; i < 150; i++) step(w);
     expect(a.hp).toBeLessThan(hp);
+  });
+});
+
+describe('Battering Ram (M3)', () => {
+  it('ignores player units and attacks only the wall', () => {
+    const w = createWorld(gameData);
+    w.phase = 'fighting';
+    const wallX = gameData.config.world.wallX;
+    const ram = spawn(w, 'ram', wallX + 20)!;
+    const rifle = spawn(w, 'rifleman', wallX + 10)!;
+    rifle.wait = 0;
+    const hp0 = rifle.hp;
+    const wall0 = w.wallHp;
+    for (let i = 0; i < 90; i++) step(w);
+    expect(rifle.hp).toBe(hp0);
+    expect(w.wallHp).toBeLessThan(wall0);
+    expect(ram.def.wallOnly).toBe(true);
+  });
+  it('wave 10 holds 3 Rams and stays under the entity cap', () => {
+    const last = gameData.waves[9]!;
+    const rams = last.groups.filter((g) => g.kind === 'ram').reduce((n, g) => n + g.count, 0);
+    expect(rams).toBe(3);
+    const total = last.groups.reduce((n, g) => n + g.count, 0);
+    expect(total).toBe(27);
+    expect(total + 11).toBeLessThan(gameData.config.world.entityCap);
+  });
+  it('free wall repairs fire after waves 5 and 8', () => {
+    expect(gameData.config.pacing.freeRepairAfterWaves).toEqual([5, 8]);
   });
 });

@@ -23,10 +23,11 @@ const smart: Bot = (w) => {
   if (shields >= 1) deploy(w, 'rifleman');
 };
 
-// Smart + Sniper: as smart, plus one Sniper held after wave 3 (Designer spec v0.1).
+// Smart + Sniper: as smart, plus both Sniper slots held after wave 3 (Designer spec v0.1).
 const smartSniper: Bot = (w, r) => {
   smart(w, r);
-  if (w.wave >= 3 && !w.entities.some((e) => e.kind === 'sniper' && !e.dead)) deploy(w, 'sniper');
+  // Holds both Sniper slots (maxAlive 2): deploys whenever a charge is ready and a slot is free (tryDeploy enforces the cap).
+  if (w.wave >= 3) deploy(w, 'sniper');
 };
 
 // Smart + Sniper + wall tier 2: buys the wall upgrade as soon as it can afford it after wave 3 (the upgrade also fully repairs).
@@ -48,15 +49,39 @@ function play(bot: Bot, seed: number) {
   const waveWall: number[] = [];
   const shieldDeaths: number[] = gameData.waves.map(() => 0);
   const dead = new Set<number>();
+  const lost: number[] = gameData.waves.map(() => 0); // player units lost per wave
+  const lostSeen = new Set<number>();
+  const peakScrapW: number[] = gameData.waves.map(() => 0);
+  const peakEnt: number[] = gameData.waves.map(() => 0);
+  const ramBorn = new Map<number, number>();
+  const ramTimes: number[][] = gameData.waves.map(() => []); // seconds from spawn to reaching the wall, per wave
+  const ramReached = new Set<number>();
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);
     // All bots spend Scrap on wall repair between waves (spam never repairs).
     if (bot !== spam) {
       repairWall(w);
       // Smart builds the Tower once the wall is full and it has the Scrap.
-      if ((bot === smart || bot === smartSniper || bot === smartT2) && w.wallHp >= w.wallMaxHp) buildStructure(w, 'tower');
+      // The tier 2 bot saves for the wall upgrade first (the Tower comes after).
+      const saving = bot === smartT2 && w.wallTier !== 2 && w.wave >= gameData.config.world.wallTier2.unlockWave;
+      if ((bot === smart || bot === smartSniper || bot === smartT2) && w.wallHp >= w.wallMaxHp && !saving) buildStructure(w, 'tower');
     }
     step(w);
+    peakScrapW[w.wave] = Math.max(peakScrapW[w.wave], w.scrap);
+    peakEnt[w.wave] = Math.max(peakEnt[w.wave], w.entities.length);
+    for (const e of w.entities) {
+      if (e.team === 'player' && e.def.cost === undefined && e.dead && !lostSeen.has(e.id)) {
+        lostSeen.add(e.id);
+        lost[w.wave]++;
+      }
+      if (e.kind === 'ram') {
+        if (!ramBorn.has(e.id)) ramBorn.set(e.id, w.time);
+        if (!ramReached.has(e.id) && e.x - e.def.range <= gameData.config.world.wallX + 1) {
+          ramReached.add(e.id);
+          ramTimes[w.wave].push(w.time - ramBorn.get(e.id)!);
+        }
+      }
+    }
     for (const e of w.entities)
       if (e.kind === 'shield' && e.dead && !dead.has(e.id)) {
         dead.add(e.id);
@@ -69,6 +94,10 @@ function play(bot: Bot, seed: number) {
   return {
     waveWall,
     shieldDeaths,
+    lost,
+    peakScrapW,
+    peakEnt,
+    ramTimes,
     status: w.status,
     wave: w.wave + 1,
     wallPct: Math.round((100 * w.wallHp) / w.wallMaxHp),
@@ -79,6 +108,8 @@ function play(bot: Bot, seed: number) {
 }
 
 const N = 200;
+const SIM_ONLY = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.SIM_ONLY; // e.g. SIM_ONLY=smart+sniper+t2 pnpm sim
+const deterministic = new Set<Bot>([spam, smart, smartSniper, smartT2]); // no randomness: every run is identical, so a few runs suffice
 for (const [name, bot] of [
   ['spam', spam],
   ['mix', mix],
@@ -87,18 +118,30 @@ for (const [name, bot] of [
   ['smart+sniper', smartSniper],
   ['smart+sniper+t2', smartT2],
 ] as const) {
-  const res = Array.from({ length: N }, (_, i) => play(bot, i + 1));
+  if (SIM_ONLY && !SIM_ONLY.split(',').includes(name)) continue;
+  const N_RUNS = deterministic.has(bot) ? 5 : N;
+  const res = Array.from({ length: N_RUNS }, (_, i) => play(bot, i + 1));
   const wins = res.filter((x) => x.status === 'won').length;
   const winsWall30 = res.filter((x) => x.status === 'won' && x.wallPct >= 30).length;
-  const avgWave = (res.reduce((a, x) => a + x.wave, 0) / N).toFixed(2);
+  const avgWave = (res.reduce((a, x) => a + x.wave, 0) / N_RUNS).toFixed(2);
   console.log(
-    `${name.padEnd(6)} runs=${N} win%=${((100 * wins) / N).toFixed(0)} win&wall>=30%=${((100 * winsWall30) / N).toFixed(0)} avgFinalWave=${avgWave} avgWallPct=${(res.reduce((a, x) => a + x.wallPct, 0) / N).toFixed(0)} avgScrap=${(res.reduce((a, x) => a + x.scrap, 0) / N).toFixed(0)} avgTime=${(res.reduce((a, x) => a + x.time, 0) / N).toFixed(0)}s`,
+    `${name.padEnd(6)} runs=${N_RUNS} win%=${((100 * wins) / N_RUNS).toFixed(0)} win&wall>=30%=${((100 * winsWall30) / N_RUNS).toFixed(0)} avgFinalWave=${avgWave} avgWallPct=${(res.reduce((a, x) => a + x.wallPct, 0) / N_RUNS).toFixed(0)} avgScrap=${(res.reduce((a, x) => a + x.scrap, 0) / N_RUNS).toFixed(0)} avgTime=${(res.reduce((a, x) => a + x.time, 0) / N_RUNS).toFixed(0)}s`,
   );
+  const avgOf = (f: (x: (typeof res)[number]) => number) => res.reduce((a, x) => a + f(x), 0) / N_RUNS;
+  const ramT = (k: number) => {
+    const t = res.flatMap((x) => x.ramTimes[k]);
+    return t.length
+      ? t
+          .slice(0, 6)
+          .map((v) => v.toFixed(0) + 's')
+          .join('/')
+      : '-';
+  };
   for (let k = 0; k < gameData.waves.length; k++) {
     const reached = res.filter((x) => x.waveWall[k] !== undefined);
     const avg = reached.length ? reached.reduce((a, x) => a + x.waveWall[k], 0) / reached.length : 0;
     console.log(
-      `   wave ${k + 1}: cleared=${((100 * reached.length) / N).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}% shieldDeaths=${(res.reduce((a, x) => a + x.shieldDeaths[k], 0) / N).toFixed(1)}`,
+      `   wave ${k + 1}: cleared=${((100 * reached.length) / N_RUNS).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}% shieldDeaths=${avgOf((x) => x.shieldDeaths[k]).toFixed(1)} unitsLost=${avgOf((x) => x.lost[k]).toFixed(1)} peakScrap=${Math.max(...res.map((x) => x.peakScrapW[k])).toFixed(0)} peakEntities=${Math.max(...res.map((x) => x.peakEnt[k]))} ramToWall=${ramT(k)}`,
     );
   }
 }

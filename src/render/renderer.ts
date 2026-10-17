@@ -1,6 +1,7 @@
 import { ViewPool } from './pool';
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import { BAND_NEAR_Y, CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project, wallClearance } from './project';
+import { artMeta } from './artMeta';
 import { computePressure, type Entity, type World } from '../sim';
 
 interface View {
@@ -8,6 +9,7 @@ interface View {
   body: Graphics;
   bar: Graphics;
   sprite: Sprite;
+  shadow: Graphics;
   used: boolean;
 }
 
@@ -37,6 +39,7 @@ export class Renderer {
       hammerknight: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       footman: ['idle', 'walkA', 'walkB', 'attack', 'death'],
       footman2: ['idle', 'attack', 'death'],
+      ram: ['idle', 'walkA', 'walkB', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
     try {
@@ -148,7 +151,7 @@ export class Renderer {
     shadow.ellipse(0, -2, 26, 6).fill({ color: 0x000000, alpha: 0.28 });
     root.addChild(shadow, body, sprite, bar);
     this.world.addChild(root);
-    return { root, body, bar, sprite, used: true };
+    return { root, body, bar, sprite, shadow, used: true };
   }
 
   private build(v: View, e: Entity): void {
@@ -201,7 +204,18 @@ export class Renderer {
       if (v.sprite.visible) {
         const t = this.texFor(this.artKind(e), poseOf(e, w.time));
         if (t) v.sprite.texture = t;
-        const bob = (e.def.speed > 0 || e.prevX !== e.x) && !e.dead ? Math.sin(w.time * 9 + e.id) * 2 : 0;
+        const meta = artMeta(this.artKind(e));
+        v.sprite.anchor.set(meta.anchorX, 1);
+        v.sprite.scale.set(meta.scale);
+        v.shadow.scale.set(meta.shadowWidth / 26, 1);
+        v.shadow.x = meta.bodyOffsetX * meta.scale;
+        const moving = (e.def.speed > 0 || e.prevX !== e.x) && !e.dead;
+        // Cart bob: a small bounce while moving, always upward from the ground so the wheels never sink.
+        const bob = !moving
+          ? 0
+          : meta.bob
+            ? -Math.abs(Math.sin(w.time * meta.bob.speed + e.id)) * meta.bob.amplitude
+            : Math.sin(w.time * 9 + e.id) * 2;
         v.sprite.y = bob;
       }
       v.root.alpha = e.dead
@@ -214,10 +228,12 @@ export class Renderer {
       v.body.alpha = v.sprite.alpha = e.hitFlash > 0 ? 0.55 : 1;
       v.bar.clear();
       if (!e.dead && e.hp < e.maxHp) {
-        const bw = Math.max(20, e.def.width);
-        const by = v.sprite.visible ? -(v.sprite.texture.height - 8) : -e.def.height - 9;
-        v.bar.rect(-bw / 2, by, bw, 4).fill(0x000000);
-        v.bar.rect(-bw / 2, by, bw * Math.max(0, e.hp / e.maxHp), 4).fill(e.team === 'player' ? 0x6bd36b : 0xd8343a);
+        const meta = artMeta(this.artKind(e));
+        const bw = Math.max(20, v.sprite.visible ? (meta.barWidth ?? e.def.width) : e.def.width);
+        const bx = v.sprite.visible ? meta.bodyOffsetX * meta.scale - bw / 2 : -bw / 2;
+        const by = v.sprite.visible ? -(v.sprite.texture.height * meta.scale - 8) : -e.def.height - 9;
+        v.bar.rect(bx, by, bw, 4).fill(0x000000);
+        v.bar.rect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 4).fill(e.team === 'player' ? 0x6bd36b : 0xd8343a);
       }
     }
     for (const [id, v] of this.views) {

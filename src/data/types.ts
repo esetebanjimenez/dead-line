@@ -12,6 +12,7 @@ export interface UnitDef {
   speed: number; // world units per second
   knockback: number; // pixels pushed onto a zombie hit by this unit
   knockbackImmune?: boolean;
+  wallOnly?: boolean; // zombie only: ignores player units and attacks only the wall (then the base once the wall is down)
   holdInPlace?: boolean; // player only: spawns at its hold slot and never marches out
   unlockWave?: number; // player only: cannot be deployed until this many waves have been cleared
   prefer?: 'highestHp'; // player only: shoots the highest-HP enemy in range instead of the nearest
@@ -78,7 +79,7 @@ export interface GameConfig {
     pressureRedCountRange: number; // urgent when pressureRedCount zombies are within this distance
     pressureRedCount: number;
   };
-  pacing: { bannerTime: number; wavePause: number; freeRepairAfterWave: number; freeRepairFraction: number }; // free repair: once, when the given wave (1-based) is cleared
+  pacing: { bannerTime: number; wavePause: number; freeRepairAfterWaves: number[]; freeRepairFraction: number }; // free repair: once for each listed wave (1-based), when it is cleared
 }
 
 export interface GameData {

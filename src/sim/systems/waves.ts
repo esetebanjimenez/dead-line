@@ -38,7 +38,7 @@ export function waveSystem(w: World, dt: number): void {
         } else {
           w.phase = 'pause';
           w.phaseTimer = p.wavePause;
-          if (w.wave + 1 === p.freeRepairAfterWave) w.wallHp = Math.min(w.wallMaxHp, w.wallHp + p.freeRepairFraction * w.wallMaxHp);
+          if (p.freeRepairAfterWaves.includes(w.wave + 1)) w.wallHp = Math.min(w.wallMaxHp, w.wallHp + p.freeRepairFraction * w.wallMaxHp);
         }
       }
       break;

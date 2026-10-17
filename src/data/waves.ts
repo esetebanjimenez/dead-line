@@ -1,4 +1,24 @@
-import type { WaveDef } from './types';
+import type { WaveDef, WaveGroup } from './types';
+
+/** Spreads `count` spawns of one kind evenly between two times (a single spawn lands at `from`). */
+function spread(kind: string, count: number, from: number, to: number): WaveGroup {
+  return { kind, count, interval: count > 1 ? Math.round(((to - from) / (count - 1)) * 100) / 100 : 1, delay: from };
+}
+
+function buildWave(n: number, payout: number, counts: Record<string, number>): WaveDef {
+  const window = 42 + 5 * (n - 6);
+  const third = Math.round(window * (2 / 3));
+  const groups: WaveGroup[] = [];
+  const add = (kind: string, from: number, to: number) => {
+    if (counts[kind]) groups.push(spread(kind, counts[kind]!, from, to));
+  };
+  add('shambler', 0, window - 6);
+  add('runner', 6, window - 10);
+  add('spitter', 10, window - 8);
+  add('brute', Math.round(window * 0.45), window - 4);
+  add('ram', third, window);
+  return { payout, groups };
+}
 
 // M1 waves, retune v5 from the Game Designer (shambler only).
 export const waves: WaveDef[] = [
@@ -40,4 +60,9 @@ export const waves: WaveDef[] = [
       { kind: 'brute', count: 1, interval: 1, delay: 42 },
     ],
   },
+  // M3 waves 7 to 10 (Designer spec v0.1 Module A). Window = wave 6 window (42s) + 5s per wave; Rams in the back third, staggered.
+  buildWave(7, 138, { shambler: 12, runner: 4, spitter: 3, brute: 1 }),
+  buildWave(8, 159, { shambler: 12, runner: 5, spitter: 3, brute: 2, ram: 1 }),
+  buildWave(9, 183, { shambler: 12, runner: 5, spitter: 3, brute: 1, ram: 1 }),
+  buildWave(10, 210, { shambler: 14, runner: 6, spitter: 3, brute: 1, ram: 3 }),
 ];

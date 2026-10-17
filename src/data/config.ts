@@ -8,7 +8,7 @@ export const config: GameConfig = {
     baseX: 40,
     wallX: 260,
     wallHp: 400,
-    wallTier2: { hp: 650, cost: 350, unlockWave: 5, repairCostMult: 1.5, upgradeHealFraction: 0.5 },
+    wallTier2: { hp: 650, cost: 350, unlockWave: 4, repairCostMult: 1.5, upgradeHealFraction: 0.5 },
     repairHpPerScrap: 4,
     baseHp: 500,
     spawnX: 1000,
@@ -38,5 +38,5 @@ export const config: GameConfig = {
     pressureRedCountRange: 150,
     pressureRedCount: 4,
   },
-  pacing: { bannerTime: 3, wavePause: 10, freeRepairAfterWave: 5, freeRepairFraction: 0.25 },
+  pacing: { bannerTime: 3, wavePause: 10, freeRepairAfterWaves: [5, 8], freeRepairFraction: 0.25 },
 };
