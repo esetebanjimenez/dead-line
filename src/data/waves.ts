@@ -28,17 +28,16 @@ export const waves: WaveDef[] = [
       { kind: 'brute', count: 1, interval: 1, delay: 14 },
     ],
   },
-  // Wave 6: composition is a programmer assumption (spec says "3 mixed groups"): cavalry rush, archer screen, then the Hammer Knight push.
+  // Wave 6 (smaller, Designer request): composition is a programmer assumption: footman rush, cavalry, archer screen, then the Hammer Knight push.
   {
     payout: 120,
     groups: [
-      { kind: 'shambler', count: 8, interval: 1.4, delay: 0 },
+      { kind: 'shambler', count: 6, interval: 1.4, delay: 0 },
       { kind: 'runner', count: 3, interval: 2.5, delay: 6 },
-      { kind: 'shambler', count: 8, interval: 1.4, delay: 20 },
-      { kind: 'spitter', count: 3, interval: 3, delay: 24 },
-      { kind: 'shambler', count: 6, interval: 1.4, delay: 40 },
-      { kind: 'brute', count: 1, interval: 1, delay: 44 },
-      { kind: 'spitter', count: 2, interval: 3, delay: 46 },
+      { kind: 'shambler', count: 6, interval: 1.4, delay: 20 },
+      { kind: 'spitter', count: 2, interval: 3, delay: 24 },
+      { kind: 'shambler', count: 4, interval: 1.4, delay: 38 },
+      { kind: 'brute', count: 1, interval: 1, delay: 42 },
     ],
   },
 ];

@@ -33,5 +33,5 @@ export const config: GameConfig = {
     pressureRedCountRange: 150,
     pressureRedCount: 4,
   },
-  pacing: { bannerTime: 3, wavePause: 10 },
+  pacing: { bannerTime: 3, wavePause: 10, freeRepairAfterWave: 5, freeRepairFraction: 0.25 },
 };

@@ -70,7 +70,7 @@ export interface GameConfig {
     pressureRedCountRange: number; // urgent when pressureRedCount zombies are within this distance
     pressureRedCount: number;
   };
-  pacing: { bannerTime: number; wavePause: number };
+  pacing: { bannerTime: number; wavePause: number; freeRepairAfterWave: number; freeRepairFraction: number }; // free repair: once, when the given wave (1-based) is cleared
 }
 
 export interface GameData {

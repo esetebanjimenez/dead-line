@@ -120,7 +120,7 @@ export const units: UnitDef[] = [
     team: 'zombie',
     name: 'Hammer Knight',
     hp: 500,
-    dps: 24,
+    dps: 18,
     range: 34,
     attackInterval: 2.5,
     windup: 0.7,
