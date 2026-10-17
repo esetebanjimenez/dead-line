@@ -89,7 +89,6 @@ export class Hud {
     this.repair = { el: rep, n: repN };
     const up = document.createElement('button');
     up.className = 'deploy';
-    up.style.display = 'none';
     up.innerHTML = `<span>Wall tier 2</span><span class="n">${w.data.config.world.wallTier2.cost}</span><span data-k style="font-size:10px">[U]</span>`;
     const doUpgrade = () => {
       if (upgradeWall(this.getWorld()) !== 'ok') {
@@ -125,8 +124,10 @@ export class Hud {
     this.skip.el.style.display = w.phase === 'pause' && w.status === 'playing' ? '' : 'none';
     this.skip.n.textContent = `${Math.ceil(w.phaseTimer)}s`;
     const t2 = w.data.config.world.wallTier2;
-    this.upgrade.el.style.display = w.wallTier === 1 && w.wave >= t2.unlockWave ? '' : 'none';
-    this.upgrade.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < t2.cost);
+    const t2Locked = w.wave < t2.unlockWave;
+    this.upgrade.el.style.display = w.wallTier === 1 ? '' : 'none';
+    this.upgrade.n.textContent = t2Locked ? `Wave ${t2.unlockWave}` : `${t2.cost}`;
+    this.upgrade.el.classList.toggle('empty', t2Locked || !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < t2.cost);
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
     document.getElementById('wave')!.textContent = `${w.wave + 1}/${w.data.waves.length}`;

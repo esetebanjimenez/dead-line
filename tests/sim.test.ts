@@ -328,6 +328,8 @@ describe('wall tier 2 (M2)', () => {
     w.scrap = 500;
     w.wave = 4;
     expect(upgradeWall(w)).toBe('locked');
+    expect(w.wallTier).toBe(1);
+    expect(w.scrap).toBe(500);
     w.wave = 5;
     w.wallHp = 100;
     expect(upgradeWall(w)).toBe('ok');
