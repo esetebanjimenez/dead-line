@@ -9,7 +9,7 @@ export const units: UnitDef[] = [
     name: 'Rifleman',
     hp: 30,
     dps: 6,
-    range: 120,
+    range: 130,
     attackInterval: 0.8,
     windup: 0.15,
     speed: 0,
