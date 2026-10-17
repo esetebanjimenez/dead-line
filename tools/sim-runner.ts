@@ -8,8 +8,12 @@ function rng(seed: number) {
 }
 
 type Bot = (w: World, r: () => number) => void;
-// Spam: deploys whatever it can, with no plan, picking the unit at random.
-const spam: Bot = (w, r) => {
+// Spam: deploys Riflemen only, as fast as it can (the design's "careless" player).
+const spam: Bot = (w) => {
+  deploy(w, 'rifleman');
+};
+// Mix: random 50/50 between Rifleman and Shield, with no plan.
+const mix: Bot = (w, r) => {
   if (r() < 0.5) deploy(w, r() < 0.5 ? 'rifleman' : 'shield');
 };
 // Smart (Designer's Shield-front rules v2): Shield whenever ready and fewer than 3 alive; Rifleman whenever ready once a Shield is alive. Never hold charges.
@@ -45,6 +49,7 @@ function play(bot: Bot, seed: number) {
 const N = 200;
 for (const [name, bot] of [
   ['spam', spam],
+  ['mix', mix],
   ['smart', smart],
 ] as const) {
   const res = Array.from({ length: N }, (_, i) => play(bot, i + 1));
