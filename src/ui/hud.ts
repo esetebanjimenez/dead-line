@@ -130,6 +130,7 @@ export class Hud {
     this.upgrade.el.classList.toggle('empty', t2Locked || !(w.phase === 'pause' || w.phase === 'banner') || w.scrap < t2.cost);
     this.repair.n.textContent = `${Math.floor(w.scrap)}`;
     this.repair.el.classList.toggle('empty', !(w.phase === 'pause' || w.phase === 'banner') || w.wallHp >= w.wallMaxHp || w.scrap < 1);
+    document.getElementById('scrap')!.textContent = `${Math.floor(w.scrap)}`;
     document.getElementById('wave')!.textContent = `${w.wave + 1}/${w.data.waves.length}`;
     (document.getElementById('wallbar') as HTMLElement).style.width = `${(100 * w.wallHp) / w.wallMaxHp}%`;
     const bf = w.baseHp / w.baseMaxHp;
