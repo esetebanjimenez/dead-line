@@ -230,8 +230,9 @@ export class Renderer {
         const meta = artMeta(this.artKind(e));
         v.sprite.anchor.set(meta.anchorX, 1);
         v.sprite.scale.set(meta.scale);
+        v.sprite.x = meta.shiftX ?? 0;
         v.shadow.scale.set(meta.shadowWidth / 26, 1);
-        v.shadow.x = meta.bodyOffsetX * meta.scale;
+        v.shadow.x = meta.bodyOffsetX * meta.scale + (meta.shiftX ?? 0);
         const moving = (e.def.speed > 0 || e.prevX !== e.x) && !e.dead;
         // Cart bob: a small bounce while moving, always upward from the ground so the wheels never sink.
         const bob = !moving
@@ -253,7 +254,7 @@ export class Renderer {
       if (!e.dead && e.hp < e.maxHp) {
         const meta = artMeta(this.artKind(e));
         const bw = Math.max(20, v.sprite.visible ? (meta.barWidth ?? e.def.width) : e.def.width);
-        const bx = v.sprite.visible ? meta.bodyOffsetX * meta.scale - bw / 2 : -bw / 2;
+        const bx = v.sprite.visible ? meta.bodyOffsetX * meta.scale + (meta.shiftX ?? 0) - bw / 2 : -bw / 2;
         const by = v.sprite.visible ? -(v.sprite.texture.height * meta.scale - 8) : -e.def.height - 9;
         v.bar.rect(bx, by, bw, 4).fill(0x000000);
         v.bar.rect(bx, by, bw * Math.max(0, e.hp / e.maxHp), 4).fill(e.team === 'player' ? 0x6bd36b : 0xd8343a);
