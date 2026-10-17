@@ -46,6 +46,7 @@ export function waveSystem(w: World, dt: number): void {
       w.phaseTimer -= dt;
       if (w.phaseTimer <= 0) {
         w.wave++;
+        w.wallHp = w.wallMaxHp; // M1 rule: the wall restores between waves (scrap repair is M2)
         w.phase = 'banner';
         w.phaseTimer = p.bannerTime;
       }

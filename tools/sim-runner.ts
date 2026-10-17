@@ -28,11 +28,10 @@ function play(bot: Bot, seed: number) {
   const r = rng(seed);
   let minWall = 1;
   const waveWall: number[] = [];
-  let prev = 0;
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);
     step(w);
-    while (prev < w.wave) waveWall[prev++] = (100 * w.wallHp) / w.wallMaxHp;
+    if (w.phase === 'pause' && waveWall[w.wave] === undefined) waveWall[w.wave] = (100 * w.wallHp) / w.wallMaxHp;
     if (w.wave === gameData.waves.length - 1) minWall = Math.min(minWall, w.wallHp / w.wallMaxHp);
   }
   if (w.status === 'won') waveWall[w.wave] = (100 * w.wallHp) / w.wallMaxHp;
@@ -63,5 +62,20 @@ for (const [name, bot] of [
     const reached = res.filter((x) => x.waveWall[k] !== undefined);
     const avg = reached.length ? reached.reduce((a, x) => a + x.waveWall[k], 0) / reached.length : 0;
     console.log(`   wave ${k + 1}: cleared=${((100 * reached.length) / N).toFixed(0)}% avgWallAfter=${avg.toFixed(0)}%`);
+  }
+}
+
+// Trace: wave 1, smart bot, seed 1.
+{
+  const w = createWorld(gameData);
+  const r = rng(1);
+  console.log('trace (smart, wave 1): t, wall HP, units alive, zombies alive, units hit so far');
+  for (let t = 0; w.wave === 0 && w.phase !== 'pause' && t < 30 * 120; t++) {
+    smart(w, r);
+    step(w);
+    if (t % 150 === 0) {
+      const alive = (team: string) => w.entities.filter((e) => !e.dead && e.team === team).length;
+      console.log(`  ${w.time.toFixed(1)}s wall=${w.wallHp.toFixed(0)} units=${alive('player')} zombies=${alive('zombie')}`);
+    }
   }
 }
