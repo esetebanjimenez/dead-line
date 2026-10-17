@@ -143,24 +143,26 @@ function holdX(w: World, kind: string): number {
 
 export function livingPlayerUnits(w: World): number {
   let n = 0;
-  for (const e of w.entities) if (!e.dead && e.team === 'player' && e.def.cost === undefined) n++;
+  for (const e of w.entities) if (!e.dead && e.team === 'player' && e.def.cost === undefined && !e.def.holdInPlace) n++;
   return n;
 }
 
-export type DeployResult = 'ok' | 'no-charge' | 'cooldown' | 'unit-limit' | 'entity-cap' | 'game-over';
+export type DeployResult = 'locked' | 'ok' | 'no-charge' | 'cooldown' | 'unit-limit' | 'entity-cap' | 'game-over';
 
 /** Player action. Charges, per-unit cooldown, global cooldown, and the alive-unit limit all apply. */
 export function tryDeploy(w: World, kind: string): DeployResult {
   if (w.status !== 'playing') return 'game-over';
+  const ud = unitDef(w, kind);
+  if (ud.unlockWave !== undefined && w.wave < ud.unlockWave) return 'locked';
   const c = w.charges[kind];
   if (!c || c.count <= 0) return 'no-charge';
   if (w.globalCd > 0 || (w.deployCd[kind] ?? 0) > 0) return 'cooldown';
-  if (livingPlayerUnits(w) >= w.data.config.world.maxUnitsAlive) return 'unit-limit';
+  if (!ud.holdInPlace && livingPlayerUnits(w) >= w.data.config.world.maxUnitsAlive) return 'unit-limit';
   const cap = unitDef(w, kind).maxAlive;
   if (cap !== undefined && w.entities.filter((e) => !e.dead && e.kind === kind).length >= cap) return 'unit-limit';
   const def = unitDef(w, kind);
   const cfg = w.data.config.world;
-  const mobile = def.cost === undefined;
+  const mobile = def.cost === undefined && !def.holdInPlace;
   const e = spawn(w, kind, mobile ? cfg.spawnPlayerX : holdX(w, kind));
   if (!e) return 'entity-cap';
   if (mobile) {

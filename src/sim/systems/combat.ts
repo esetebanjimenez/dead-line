@@ -10,7 +10,8 @@ function findTarget(w: World, e: Entity): Target | null {
     for (const o of w.entities) {
       if (o.dead || o.team !== 'zombie') continue;
       if (Math.abs(o.x - e.x) > r) continue;
-      if (!best || Math.abs(o.x - e.x) < Math.abs(best.x - e.x)) best = o;
+      if (!best) best = o;
+      else if (e.def.prefer === 'highestHp' ? o.hp > best.hp : Math.abs(o.x - e.x) < Math.abs(best.x - e.x)) best = o;
     }
     return best ? { kind: 'entity', e: best } : null;
   }
@@ -100,7 +101,7 @@ export function combatSystem(w: World, dt: number): void {
     }
     if (e.team === 'zombie') {
       e.x -= e.def.speed * speedMult * dt;
-    } else if (e.def.cost === undefined) {
+    } else if (e.def.cost === undefined && !e.def.holdInPlace) {
       // Player units march out of the gate until an enemy is in range, never past the leash (they walk back to it after a fight).
       const cfg = w.data.config.world;
       if (e.x < cfg.leashX) e.x = Math.min(cfg.leashX, e.x + cfg.advanceSpeed * dt);

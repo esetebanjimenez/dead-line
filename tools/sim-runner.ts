@@ -23,6 +23,12 @@ const smart: Bot = (w) => {
   if (shields >= 1) deploy(w, 'rifleman');
 };
 
+// Smart + Sniper: as smart, plus one Sniper held after wave 3 (Designer spec v0.1).
+const smartSniper: Bot = (w, r) => {
+  smart(w, r);
+  if (w.wave >= 3 && !w.entities.some((e) => e.kind === 'sniper' && !e.dead)) deploy(w, 'sniper');
+};
+
 function play(bot: Bot, seed: number) {
   const w = createWorld(gameData);
   const r = rng(seed);
@@ -36,7 +42,7 @@ function play(bot: Bot, seed: number) {
     if (bot !== spam) {
       repairWall(w);
       // Smart builds the Tower once the wall is full and it has the Scrap.
-      if (bot === smart && w.wallHp >= w.wallMaxHp) buildStructure(w, 'tower');
+      if ((bot === smart || bot === smartSniper) && w.wallHp >= w.wallMaxHp) buildStructure(w, 'tower');
     }
     step(w);
     for (const e of w.entities)
@@ -65,6 +71,7 @@ for (const [name, bot] of [
   ['spam', spam],
   ['mix', mix],
   ['smart', smart],
+  ['smart+sniper', smartSniper],
 ] as const) {
   const res = Array.from({ length: N }, (_, i) => play(bot, i + 1));
   const wins = res.filter((x) => x.status === 'won').length;

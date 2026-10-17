@@ -299,3 +299,22 @@ describe('gate walk-out (M2)', () => {
     expect(u.hp).toBe(u.maxHp);
   });
 });
+
+describe('sniper (M2)', () => {
+  it('is locked until wave 4, holds at x 180 and shoots the highest-HP enemy in range', () => {
+    const w = createWorld(gameData);
+    expect(tryDeploy(w, 'sniper')).toBe('locked');
+    w.wave = 3;
+    w.phase = 'done';
+    expect(tryDeploy(w, 'sniper')).toBe('ok');
+    const sn = w.entities.find((e) => e.kind === 'sniper')!;
+    expect(sn.wait).toBeUndefined();
+    expect(sn.x).toBe(180);
+    const small = spawn(w, 'runner', 300)!;
+    const big = spawn(w, 'brute', 400)!;
+    run(w, 1.5);
+    expect(sn.x).toBe(180);
+    expect(big.hp).toBeLessThan(big.maxHp);
+    expect(small.hp).toBe(small.maxHp);
+  });
+});

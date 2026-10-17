@@ -12,6 +12,9 @@ export interface UnitDef {
   speed: number; // world units per second
   knockback: number; // pixels pushed onto a zombie hit by this unit
   knockbackImmune?: boolean;
+  holdInPlace?: boolean; // player only: spawns at its hold slot and never marches out
+  unlockWave?: number; // player only: cannot be deployed until this many waves have been cleared
+  prefer?: 'highestHp'; // player only: shoots the highest-HP enemy in range instead of the nearest
   plantX?: number; // zombie only: advances past the wall until x <= plantX (or a frontline unit is in range), then stops for good
   plantDelay?: number; // zombie only: seconds of plant-and-aim pause before the first shot
   puddle?: { halfWidth: number; dps: number; duration: number }; // zombie only: attack lands a damaging patch instead of direct damage

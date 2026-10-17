@@ -90,7 +90,8 @@ export class Hud {
       if (!b) continue;
       const c = w.charges[u.id];
       b.n.textContent = `${c.count}/${u.maxCharges}`;
-      b.el.classList.toggle('empty', c.count === 0);
+      b.el.classList.toggle('empty', c.count === 0 || (u.unlockWave !== undefined && w.wave < u.unlockWave));
+      if (u.unlockWave !== undefined) b.el.style.display = w.wave < u.unlockWave ? 'none' : '';
       b.fill.style.setProperty('--p', c.count >= u.maxCharges! ? '1' : String(c.timer / u.chargeRefill!));
     }
     if (this.tower) {
