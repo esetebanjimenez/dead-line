@@ -49,10 +49,10 @@ describe('deployment rules', () => {
     w.globalCd = 0;
     expect(tryDeploy(w, 'rifleman')).toBe('no-charge');
   });
-  it('applies global and per-unit cooldowns', () => {
+  it('applies per-unit cooldowns only (no global cooldown)', () => {
     const w = createWorld(gameData);
     expect(tryDeploy(w, 'rifleman')).toBe('ok');
-    expect(tryDeploy(w, 'shield')).toBe('cooldown'); // global 0.4s
+    expect(tryDeploy(w, 'shield')).toBe('ok'); // different kind: no global cooldown
     run(w, 0.45);
     expect(tryDeploy(w, 'rifleman')).toBe('cooldown'); // per-unit 0.5s
     run(w, 0.1);
