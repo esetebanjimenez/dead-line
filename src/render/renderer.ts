@@ -1,5 +1,5 @@
 import { Application, Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import { CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project, wallClearance } from './project';
+import { BAND_NEAR_Y, CANVAS_H, CANVAS_W, MAX_JITTER_X, X_SCALE, BAND_FAR_Y, depthOf, poseOf, project, wallClearance } from './project';
 import { computePressure, type Entity, type World } from '../sim';
 
 interface View {
@@ -20,6 +20,7 @@ export class Renderer {
   private wallSprites: Sprite[] = [];
   private base = new Graphics();
   private pressure = new Graphics();
+  private fx = new Graphics();
   private lw = CANVAS_W;
   private lh = CANVAS_H;
   private tex = new Map<string, Texture>();
@@ -105,7 +106,8 @@ export class Renderer {
       this.world.addChild(bg);
       g.visible = false;
     }
-    this.world.addChild(g, this.base, this.wall, this.pressure);
+    this.world.addChild(g, this.base, this.wall, this.pressure, this.fx);
+    this.fx.zIndex = 5000;
     const baseTex = this.tex.get('base');
     if (baseTex) {
       const bs = new Sprite(baseTex);
@@ -230,6 +232,36 @@ export class Renderer {
         .poly([ax - 26, ay, ax + 8, ay - 20, ax + 8, ay + 20])
         .fill({ color: col, alpha: (0.3 + 0.7 * pr.level) * pulse })
         .stroke({ color: 0x222222, width: 2 });
+    }
+    // Fire Archer effects: burning patches span the whole band depth; the telegraph arc ends at the target's drawn position.
+    this.fx.clear();
+    for (const pd of w.puddles) {
+      const k = 1 - pd.age / pd.ttl;
+      const cx = pd.x * X_SCALE + wallClearance(pd.x, w.data.config.world.wallX);
+      const hw = pd.halfWidth * X_SCALE;
+      const mid = (BAND_NEAR_Y + BAND_FAR_Y) / 2;
+      this.fx
+        .ellipse(cx, mid + 8, hw, (BAND_NEAR_Y - BAND_FAR_Y) / 2 + 12)
+        .fill({ color: 0xff7a1a, alpha: 0.18 + 0.32 * k })
+        .stroke({ color: 0xffc040, width: 2, alpha: 0.5 * k });
+    }
+    for (const e of w.entities) {
+      if (e.dead || !e.def.puddle || e.windupLeft < 0 || e.aimId === undefined) continue;
+      const a = this.views.get(e.id);
+      const b = this.views.get(e.aimId);
+      if (!a || !b) continue;
+      const k = 1 - Math.max(0, e.windupLeft) / e.def.windup;
+      const sx = a.root.position.x;
+      const sy = a.root.position.y - 20;
+      const tx = b.root.position.x;
+      const ty = b.root.position.y;
+      const cx = (sx + tx) / 2;
+      const cy = Math.min(sy, ty) - 90;
+      this.fx
+        .moveTo(sx, sy)
+        .quadraticCurveTo(cx, cy, tx, ty)
+        .stroke({ color: 0xffd23a, width: 3, alpha: 0.35 + 0.5 * k });
+      this.fx.circle(tx, ty, 8 + 10 * k).stroke({ color: 0xff8a1a, width: 2, alpha: 0.5 + 0.4 * k });
     }
     const f = w.wallHp / w.wallMaxHp;
     this.wall.clear();

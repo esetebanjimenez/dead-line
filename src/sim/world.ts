@@ -15,6 +15,15 @@ export interface Entity {
   dead: boolean;
   fade: number;
   age: number;
+  aimId?: number; // target entity of the telegraph (drawing only)
+  aimX?: number; // set while winding up a puddle attack: where the patch will land
+}
+export interface Puddle {
+  x: number;
+  halfWidth: number;
+  dps: number;
+  ttl: number;
+  age: number;
 }
 export interface ChargeState {
   count: number;
@@ -51,6 +60,7 @@ export interface World {
   status: Status;
   /** Render-only dummies for `?stress=N` load testing. The sim never reads or updates them. */
   stress: Entity[];
+  puddles: Puddle[];
 }
 
 export function createWorld(data: GameData): World {
@@ -79,6 +89,7 @@ export function createWorld(data: GameData): World {
     wallShake: 0,
     status: 'playing',
     stress: [],
+    puddles: [],
   };
 }
 

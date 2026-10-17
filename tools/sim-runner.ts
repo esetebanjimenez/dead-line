@@ -28,7 +28,7 @@ function play(bot: Bot, seed: number) {
   const r = rng(seed);
   let minWall = 1;
   const waveWall: number[] = [];
-  const shieldDeaths: number[] = [0, 0, 0];
+  const shieldDeaths: number[] = gameData.waves.map(() => 0);
   const dead = new Set<number>();
   for (let t = 0; w.status === 'playing' && t < 30 * 1800; t++) {
     bot(w, r);

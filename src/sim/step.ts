@@ -1,7 +1,7 @@
 import type { World } from './world';
 import { chargeSystem } from './systems/charges';
 import { waveSystem } from './systems/waves';
-import { combatSystem } from './systems/combat';
+import { combatSystem, puddleSystem } from './systems/combat';
 
 export const TICK_RATE = 30;
 export const TICK_DT = 1 / TICK_RATE;
@@ -20,6 +20,7 @@ export function step(w: World, dt: number = TICK_DT): void {
   chargeSystem(w, dt);
   waveSystem(w, dt);
   combatSystem(w, dt);
+  puddleSystem(w, dt);
   for (const e of w.entities) if (e.dead) e.fade -= dt;
   w.entities = w.entities.filter((e) => !e.dead || e.fade > 0);
   if (w.baseHp <= 0) w.status = 'lost';

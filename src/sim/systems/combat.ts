@@ -24,6 +24,14 @@ function findTarget(w: World, e: Entity): Target | null {
     }
     return best;
   };
+  if (e.def.targeting === 'backline') {
+    let rear: Entity | null = null;
+    for (const o of w.entities) {
+      if (o.dead || o.team !== 'player' || o.x >= e.x || e.x - o.x > r) continue;
+      if (!rear || o.x < rear.x) rear = o;
+    }
+    if (rear) return { kind: 'entity', e: rear };
+  }
   const front = nearestUnit(true);
   if (front) return { kind: 'entity', e: front };
   if (w.wallHp > 0) return e.x - cfg.wallX <= r ? { kind: 'wall' } : null;
@@ -34,6 +42,13 @@ function findTarget(w: World, e: Entity): Target | null {
 }
 
 function applyHit(w: World, attacker: Entity, t: Target): void {
+  const pd = attacker.def.puddle;
+  if (pd) {
+    // Ranged puddle attack: the patch lands where the target stood when the telegraph began.
+    const x = attacker.aimX ?? (t.kind === 'entity' ? t.e.x : w.data.config.world.wallX);
+    w.puddles.push({ x, halfWidth: pd.halfWidth, dps: pd.dps, ttl: pd.duration, age: 0 });
+    return;
+  }
   const dmg = attacker.def.dps * attacker.def.attackInterval;
   if (t.kind === 'wall') {
     const before = w.wallHp;
@@ -74,10 +89,31 @@ export function combatSystem(w: World, dt: number): void {
       continue;
     }
     if (t) {
-      if (e.cooldown <= 0) e.windupLeft = e.def.windup;
+      if (e.cooldown <= 0) {
+        e.windupLeft = e.def.windup;
+        e.aimX = t.kind === 'entity' ? t.e.x : undefined;
+        e.aimId = t.kind === 'entity' ? t.e.id : undefined;
+      }
       continue;
     }
     if (e.team === 'zombie') e.x -= e.def.speed * speedMult * dt;
     // Player units hold position (they spawn at their hold slot).
   }
+}
+
+/** Burning patches damage every player unit standing on them. Each patch expires after its duration. */
+export function puddleSystem(w: World, dt: number): void {
+  for (const p of w.puddles) {
+    p.age += dt;
+    for (const o of w.entities) {
+      if (o.dead || o.team !== 'player' || Math.abs(o.x - p.x) > p.halfWidth) continue;
+      o.hp -= p.dps * dt;
+      o.hitFlash = Math.max(o.hitFlash, w.data.config.feel.hitFlash);
+      if (o.hp <= 0) {
+        o.dead = true;
+        o.fade = w.data.config.feel.deathFade;
+      }
+    }
+  }
+  w.puddles = w.puddles.filter((p) => p.age < p.ttl);
 }

@@ -12,4 +12,33 @@ export const waves: WaveDef[] = [
       { kind: 'shambler', count: 8, interval: 1.6, delay: 21.2 },
     ],
   },
+  // M2 waves 4 to 6 (Kingdom ids: shambler = Footman, runner = Light Cavalry, brute = Hammer Knight, spitter = Fire Archer).
+  {
+    payout: 70,
+    groups: [
+      { kind: 'shambler', count: 10, interval: 1.5, delay: 0 },
+      { kind: 'runner', count: 4, interval: 3, delay: 8 },
+    ],
+  },
+  {
+    payout: 90,
+    groups: [
+      { kind: 'shambler', count: 12, interval: 1.5, delay: 0 },
+      { kind: 'spitter', count: 3, interval: 4, delay: 6 },
+      { kind: 'brute', count: 1, interval: 1, delay: 14 },
+    ],
+  },
+  // Wave 6: composition is a programmer assumption (spec says "3 mixed groups"): cavalry rush, archer screen, then the Hammer Knight push.
+  {
+    payout: 120,
+    groups: [
+      { kind: 'shambler', count: 8, interval: 1.4, delay: 0 },
+      { kind: 'runner', count: 3, interval: 2.5, delay: 6 },
+      { kind: 'shambler', count: 8, interval: 1.4, delay: 20 },
+      { kind: 'spitter', count: 3, interval: 3, delay: 24 },
+      { kind: 'shambler', count: 6, interval: 1.4, delay: 40 },
+      { kind: 'brute', count: 1, interval: 1, delay: 44 },
+      { kind: 'spitter', count: 2, interval: 3, delay: 46 },
+    ],
+  },
 ];

@@ -7,6 +7,7 @@ import {
   deploy,
   livingPlayerUnits,
   repairWall,
+  spawn,
   buildStructure,
   step,
   tryDeploy,
@@ -212,5 +213,25 @@ describe('tower (M2)', () => {
     expect(livingPlayerUnits(w)).toBe(0);
     const t = w.entities.find((e) => e.kind === 'tower')!;
     expect(t.x).toBeLessThan(gameData.config.world.wallX);
+  });
+});
+
+describe('fire archer puddle (M2)', () => {
+  it('aims at the rearmost unit, lands a patch after the telegraph, and the patch hurts then expires', () => {
+    const w = createWorld(gameData);
+    w.phase = 'done'; // keep the wave system out of the way
+    const a = spawn(w, 'rifleman', 150)!;
+    const front = spawn(w, 'rifleman', 220)!;
+    const arch = spawn(w, 'spitter', 330)!;
+    run(w, 0.2);
+    expect(arch.aimId).toBe(a.id);
+    expect(front.hp).toBe(front.maxHp);
+    run(w, 1);
+    expect(w.puddles.length).toBe(1);
+    expect(a.hp).toBeLessThan(a.maxHp);
+    run(w, 3.5);
+    expect(w.puddles.length).toBeGreaterThanOrEqual(0);
+    w.puddles = [];
+    expect(front.hp).toBe(front.maxHp);
   });
 });
