@@ -215,7 +215,7 @@ export class Renderer {
     this.wall.clear();
     const wx = cfg.wallX * X_SCALE;
     const top = BAND_FAR_Y - 30;
-    const bot = 625;
+    const bot = 655;
     // Frontline marker: a sandbag line where Shield troopers land.
     for (let y = top + 20; y < bot; y += 44) this.wall.roundRect(wx + 40, y, 26, 8, 4).fill({ color: 0xb79c6a, alpha: 0.7 });
 

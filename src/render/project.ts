@@ -4,8 +4,8 @@ export const CANVAS_H = 720;
 /** Sim x range (0..1000) is stretched to the canvas width. */
 export const X_SCALE = CANVAS_W / 1000;
 /** Ground band: depth 0 is the nearest row (bottom), depth 1 the farthest (top). */
-export const BAND_NEAR_Y = 600;
-export const BAND_FAR_Y = 440;
+export const BAND_NEAR_Y = 640;
+export const BAND_FAR_Y = 510;
 export const SCALE_NEAR = 1;
 export const SCALE_FAR = 0.85;
 export const MAX_JITTER_X = 6;
