@@ -28,16 +28,12 @@ export class Renderer {
     const kinds: Record<string, string[]> = {
       rifleman: ['idle', 'walkA', 'walkB', 'attack', 'hit', 'death'],
       shield: ['idle', 'attack', 'death'],
-      shambler: ['idle', 'attack', 'death'],
       sniper: ['idle', 'attack', 'death'],
-      runner: ['idle', 'attack', 'death'],
-      brute: ['idle', 'attack', 'death'],
       spitter: ['idle', 'attack', 'death'],
       cavalry: ['idle', 'attack', 'death'],
       hammerknight: ['idle', 'attack', 'death'],
       footman: ['idle', 'attack', 'death'],
       footman2: ['idle', 'attack', 'death'],
-      shambler2: ['idle', 'attack', 'death'],
     };
     const base = import.meta.env.BASE_URL + 'art/';
     try {
@@ -70,7 +66,7 @@ export class Renderer {
     if (e.kind === 'shambler' && this.tex.has('footman_t1_idle_00'))
       return e.id % 2 === 1 && this.tex.has('footman2_t1_idle_00') ? 'footman2' : 'footman';
     if (e.kind === 'runner' && this.tex.has('cavalry_t1_idle_00')) return 'cavalry';
-    return e.kind === 'shambler' && e.id % 2 === 1 && this.tex.has('shambler2_t1_idle_00') ? 'shambler2' : e.kind;
+    return e.kind;
   }
 
   private texFor(kind: string, pose: string): Texture | undefined {
