@@ -321,31 +321,32 @@ describe('sniper (M2)', () => {
 });
 
 describe('wall tier 2 (M2)', () => {
-  it('is locked until wave 4, costs 120, fully repairs to 800 HP once, and repairs cost 1.5x', () => {
+  it('is locked until wave 5, costs 350, adds 50% of 650 HP once, and repairs cost 1.5x', () => {
     const w = createWorld(gameData);
     w.phase = 'pause';
     w.scrap = 500;
+    w.wave = 4;
     expect(upgradeWall(w)).toBe('locked');
-    w.wave = 3;
+    w.wave = 5;
     w.wallHp = 100;
     expect(upgradeWall(w)).toBe('ok');
-    expect(w.scrap).toBe(380);
-    expect(w.wallMaxHp).toBe(800);
-    expect(w.wallHp).toBe(800);
+    expect(w.scrap).toBe(150);
+    expect(w.wallMaxHp).toBe(650);
+    expect(w.wallHp).toBe(425); // 100 + 325
     expect(upgradeWall(w)).toBe('owned');
-    w.wallHp = 800 - 60;
+    w.wallHp = 650 - 60;
     repairWall(w);
-    expect(w.wallHp).toBe(800);
-    expect(w.scrap).toBe(380 - 23); // 60 HP at 1 Scrap per 4/1.5 HP = 22.5, rounded up
+    expect(w.wallHp).toBe(650);
+    expect(w.scrap).toBe(150 - 23); // 60 HP at 1 Scrap per 4/1.5 HP = 22.5, rounded up
   });
   it('cannot be bought mid-wave or without Scrap', () => {
     const w = createWorld(gameData);
-    w.wave = 3;
+    w.wave = 5;
     w.scrap = 500;
     w.phase = 'fighting';
     expect(upgradeWall(w)).toBe('bad-phase');
     w.phase = 'pause';
-    w.scrap = 119;
+    w.scrap = 349;
     expect(upgradeWall(w)).toBe('no-scrap');
   });
 });

@@ -202,7 +202,7 @@ export function upgradeWall(w: World): 'ok' | 'locked' | 'owned' | 'no-scrap' | 
   w.scrap -= t2.cost;
   w.wallTier = 2;
   w.wallMaxHp = t2.hp;
-  w.wallHp = t2.hp;
+  w.wallHp = Math.min(t2.hp, w.wallHp + t2.hp * t2.upgradeHealFraction);
   return 'ok';
 }
 

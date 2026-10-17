@@ -49,7 +49,7 @@ export interface GameConfig {
     baseX: number;
     wallX: number;
     wallHp: number;
-    wallTier2: { hp: number; cost: number; unlockWave: number; repairCostMult: number }; // one-time upgrade between waves; also fully repairs
+    wallTier2: { hp: number; cost: number; unlockWave: number; repairCostMult: number; upgradeHealFraction: number }; // one-time upgrade between waves; adds upgradeHealFraction of the new max HP
     repairHpPerScrap: number; // wall repair rate between waves (M2: 1 Scrap per 4 HP)
     baseHp: number;
     spawnX: number;
