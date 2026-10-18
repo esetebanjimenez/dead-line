@@ -3,15 +3,54 @@ export const CANVAS_W = 1280;
 export const CANVAS_H = 720;
 /** Sim x range (0..1000) is stretched to the canvas width. */
 export const X_SCALE = CANVAS_W / 1000;
-/** Ground band: depth 0 is the nearest row (bottom), depth 1 the farthest (top). */
-export const BAND_NEAR_Y = 640;
-export const BAND_FAR_Y = 510;
-export const SCALE_NEAR = 1;
-export const SCALE_FAR = 0.85;
+/**
+ * Ground band: depth 0 is the nearest row (bottom), depth 1 the farthest (top).
+ * Cropped so the playable ground fills the lower half of the frame and the sky is a thin strip,
+ * instead of the action sitting in a shallow strip under a screenful of scenery.
+ */
+export const BAND_NEAR_Y = 610;
+export const BAND_FAR_Y = 430;
+export const SCALE_NEAR = 1.15;
+export const SCALE_FAR = 0.82;
 export const MAX_JITTER_X = 6;
 
-/** Render-only clearance so units do not stand inside the 160px wall sprite (the sim wall has no thickness). */
-export const WALL_CLEAR_PX = 70;
+/**
+ * Background crop. The source art is one 1280x720 frame whose grass begins at BG_GRASS_SRC_Y; it is
+ * zoomed and shifted so that line lands at BG_GRASS_DST_Y, just above the band. Everything above the
+ * grass (trees, hills, sky) is pushed off the top, which is what tightens the camera onto the ground.
+ */
+export const BG_ZOOM = 1.27;
+export const BG_GRASS_SRC_Y = 420;
+export const BG_GRASS_DST_Y = 340;
+
+/** Destination rect for the background sprite, in canvas space. */
+export function backgroundRect(): { x: number; y: number; width: number; height: number } {
+  const width = CANVAS_W * BG_ZOOM;
+  const height = CANVAS_H * BG_ZOOM;
+  return { x: (CANVAS_W - width) / 2, y: BG_GRASS_DST_Y - BG_GRASS_SRC_Y * BG_ZOOM, width, height };
+}
+
+/**
+ * The wall is one sprite spanning the band, not a copy per depth row.
+ *
+ * The band is a fake projection: depth costs ~180px of y but only 1.4x of scale, so it implies far more
+ * ground distance than the scale does. Any object taller than a unit breaks on it. Drawing the wall once
+ * per row bottom-anchors each copy on its own ground line, which puts the FAR copy's top edge above the
+ * near one's -- the opposite of perspective, where a receding wall's top edge drops toward the horizon.
+ * No row count or scale curve fixes that (it needs the sprite to shrink faster than the band rises, i.e.
+ * negative height at the back), so the rows read as a stack of panels however finely they are spaced.
+ * One sprite stretched over the band has no such contradiction, and matches the flat side-on wall of the
+ * games this is modelled on. Units sort in front of or behind it by zIndex at WALL_DEPTH.
+ */
+export const WALL_DEPTH = 0.5;
+export const WALL_X_SCALE = 1.18;
+/** Top of the wall, a little above the far ground line so the back of the band is covered. */
+export const WALL_TOP_Y = BAND_FAR_Y - 10;
+/** Bottom, a little below the near ground line so the front of the band is covered. */
+export const WALL_BOTTOM_Y = BAND_NEAR_Y + 12;
+
+/** Render-only clearance so units do not stand inside the wall sprite (the sim wall has no thickness). */
+export const WALL_CLEAR_PX = 96;
 export function wallClearance(x: number, wallX: number): number {
   return Math.max(-1, Math.min(1, (x - wallX) / 25)) * WALL_CLEAR_PX;
 }

@@ -7,6 +7,12 @@ import {
   MAX_JITTER_X,
   X_SCALE,
   BAND_FAR_Y,
+  SCALE_NEAR,
+  WALL_BOTTOM_Y,
+  WALL_DEPTH,
+  WALL_TOP_Y,
+  WALL_X_SCALE,
+  backgroundRect,
   depthOf,
   frameForRamAttack,
   poseOf,
@@ -16,6 +22,9 @@ import {
 } from './project';
 import { artMeta } from './artMeta';
 import { computePressure, type Entity, type World } from '../sim';
+
+/** The gate is scenery drawn at the band's near edge; the camera crop makes it read as a structure rather than a prop. */
+const BASE_SCALE = 1.5;
 
 interface View {
   root: Container;
@@ -33,7 +42,9 @@ export class Renderer {
   private views = new Map<number, View>();
   private pool = new ViewPool<View>(() => this.makeView());
   private wall = new Graphics();
-  private wallSprites: Sprite[] = [];
+  private wallSprite?: Sprite;
+  /** On-screen half-width of the wall sprite, kept so the pressure halo can hug it. Set when the wall is drawn. */
+  private wallHalfW = 100;
   private wallHit = 0; // 0..1 render-only Ram strike flash/shake, set while rendering entities each frame
   private base = new Graphics();
   private pressure = new Graphics();
@@ -129,8 +140,10 @@ export class Renderer {
     const env = this.tex.get('env');
     if (env) {
       const bg = new Sprite(env);
-      bg.width = CANVAS_W;
-      bg.height = CANVAS_H;
+      const r = backgroundRect();
+      bg.position.set(r.x, r.y);
+      bg.width = r.width;
+      bg.height = r.height;
       bg.zIndex = -10;
       this.world.addChild(bg);
       g.visible = false;
@@ -141,12 +154,14 @@ export class Renderer {
     if (baseTex) {
       const bs = new Sprite(baseTex);
       bs.anchor.set(0.5, 1);
+      bs.scale.set(BASE_SCALE);
       // Keep the whole gate on screen: centre it at least half its width from the left edge.
-      bs.position.set(Math.max(w.data.config.world.baseX * X_SCALE, baseTex.width / 2 + 4), 575);
+      bs.position.set(Math.max(w.data.config.world.baseX * X_SCALE, (baseTex.width * BASE_SCALE) / 2 + 4), BAND_NEAR_Y + 10);
+      bs.zIndex = -5; // scenery: behind the troops, in front of the backdrop
       this.world.addChild(bs);
     } else
       this.base
-        .rect(w.data.config.world.baseX * X_SCALE - 38, 520 - 90, 46, 96)
+        .rect(w.data.config.world.baseX * X_SCALE - 38, BAND_NEAR_Y - 90, 46, 96)
         .fill(0x7c8fa3)
         .stroke({ color: 0x222222, width: 2 });
     this.app.renderer.on('resize', () => this.fit());
@@ -203,7 +218,6 @@ export class Renderer {
   }
 
   render(w: World, alpha: number): void {
-    const gy = 520;
     this.wallHit = 0;
     this.towerTier = w.towerTier;
     for (const v of this.views.values()) v.used = false;
@@ -284,10 +298,14 @@ export class Renderer {
     this.pressure.clear();
     if (w.status === 'playing' && pr.level > 0) {
       const col = pr.urgent ? 0xff2a2a : 0xffb02a;
-      if (w.wallHp > 0) this.pressure.ellipse(cfg.wallX * X_SCALE, gy, 40, 120).fill({ color: 0xff2a2a, alpha: 0.15 + 0.45 * pr.level });
+      // Halo sized to the wall sprite, so it reads as the wall glowing rather than a blob around it.
+      if (w.wallHp > 0)
+        this.pressure
+          .ellipse(cfg.wallX * X_SCALE, (WALL_TOP_Y + WALL_BOTTOM_Y) / 2, this.wallHalfW + 18, (WALL_BOTTOM_Y - WALL_TOP_Y) / 2 + 14)
+          .fill({ color: 0xff2a2a, alpha: 0.15 + 0.45 * pr.level });
       const pulse = pr.urgent ? 0.8 + 0.2 * Math.sin(w.time * 14) : 1;
       const ax = this.lw - 24;
-      const ay = gy - 20;
+      const ay = (BAND_NEAR_Y + BAND_FAR_Y) / 2;
       this.pressure
         .poly([ax - 26, ay, ax + 8, ay - 20, ax + 8, ay + 20])
         .fill({ color: col, alpha: (0.3 + 0.7 * pr.level) * pulse })
@@ -327,34 +345,36 @@ export class Renderer {
     this.wall.clear();
     const wx = cfg.wallX * X_SCALE;
     const top = BAND_FAR_Y - 30;
-    const bot = 655;
+    const bot = BAND_NEAR_Y + 15;
     // Frontline marker: a sandbag line where Shield troopers land.
     for (let y = top + 20; y < bot; y += 44) this.wall.roundRect(wx + 40, y, 26, 8, 4).fill({ color: 0xb79c6a, alpha: 0.7 });
 
     const wst = f <= 0.33 ? 'damaged33' : f <= 0.66 ? 'damaged66' : 'intact';
     const wtex = (w.wallTier === 2 ? this.tex.get(`wall_t2_${wst}_00`) : undefined) ?? this.tex.get(`wall_t1_${wst}_00`);
     if (wtex) {
-      const rows = [1, 0.5, 0];
-      while (this.wallSprites.length < rows.length) {
+      if (!this.wallSprite) {
         const sp = new Sprite();
         sp.anchor.set(0.5, 1);
         this.world.addChild(sp);
-        this.wallSprites.push(sp);
+        this.wallSprite = sp;
       }
       const fe = w.data.config.feel;
       const ramShake = this.wallHit * 4 * (Math.floor(w.time * 60) % 2 ? 1 : -1); // render-only, ~150ms decay
       const sx = (w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0) + ramShake;
-      rows.forEach((d, i) => {
-        const p = project(d, cfg.wallX);
-        const sp = this.wallSprites[i]!;
-        sp.visible = w.wallHp > 0;
-        sp.texture = wtex;
-        sp.tint = this.wallHit > 0 ? 0xffe0b0 : 0xffffff; // short light flash on the strike
-        sp.position.set(p.x + sx, p.y + 6);
-        sp.scale.set(p.scale);
-        sp.zIndex = Math.round(p.z * 1000) + 1;
-        if (w.wallHp > 0) this.wall.ellipse(p.x, p.y + 4, 70 * p.scale, 9 * p.scale).fill({ color: 0x000000, alpha: 0.25 });
-      });
+      const sp = this.wallSprite;
+      const p = project(WALL_DEPTH, cfg.wallX);
+      sp.visible = w.wallHp > 0;
+      sp.texture = wtex;
+      sp.tint = this.wallHit > 0 ? 0xffe0b0 : 0xffffff; // short light flash on the strike
+      sp.position.set(p.x + sx, WALL_BOTTOM_Y);
+      // One sprite covering the whole band: stretched on y, so the wall spans the ground the troops stand on.
+      sp.scale.set(WALL_X_SCALE, (WALL_BOTTOM_Y - WALL_TOP_Y) / wtex.height);
+      this.wallHalfW = (wtex.width * WALL_X_SCALE) / 2;
+      sp.zIndex = Math.round(p.z * 1000) + 1;
+      if (w.wallHp > 0)
+        this.wall
+          .ellipse(wx, (BAND_NEAR_Y + BAND_FAR_Y) / 2 + 4, 70 * SCALE_NEAR, (BAND_NEAR_Y - BAND_FAR_Y) / 2 + 10)
+          .fill({ color: 0x000000, alpha: 0.25 });
     } else if (w.wallHp > 0) {
       const fe = w.data.config.feel;
       const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
