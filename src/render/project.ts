@@ -58,7 +58,7 @@ export const WALL_STEP_FRAC = 0.33;
  */
 export function wallSegmentDepths(panelW: number): number[] {
   const out: number[] = [];
-  for (let d = WALL_DEPTH_MIN; d <= WALL_DEPTH_MAX && out.length < 64; ) {
+  for (let d = WALL_DEPTH_MIN; d <= WALL_DEPTH_MAX && out.length < 64;) {
     out.push(d);
     const scale = Math.max(SCENERY_MIN_SCALE, SCALE_NEAR + (SCALE_FAR - SCALE_NEAR) * d);
     d += Math.max(0.02, (panelW * scale * WALL_STEP_FRAC) / DEPTH_SHEAR_X);

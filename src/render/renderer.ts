@@ -374,8 +374,7 @@ export class Renderer {
         sp.position.set(p.x + sx, p.y + 6);
         sp.scale.set(p.scale);
         sp.zIndex = Math.round(p.z * 1000) + 1;
-        if (w.wallHp > 0)
-          this.wall.ellipse(p.x, p.y + 4, 64 * p.scale, 10 * p.scale).fill({ color: 0x000000, alpha: 0.1 });
+        if (w.wallHp > 0) this.wall.ellipse(p.x, p.y + 4, 64 * p.scale, 10 * p.scale).fill({ color: 0x000000, alpha: 0.1 });
       });
       if (this.gateSprite && gateIdx >= 0) {
         const p = projectRaw(depths[gateIdx]!, cfg.wallX);
