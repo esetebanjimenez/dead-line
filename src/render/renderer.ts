@@ -7,12 +7,13 @@ import {
   MAX_JITTER_X,
   X_SCALE,
   BAND_FAR_Y,
-  SCALE_NEAR,
-  WALL_BOTTOM_Y,
-  WALL_DEPTH,
-  WALL_TOP_Y,
-  WALL_X_SCALE,
+  GATE_DEPTH,
+  GATE_GAP_SEGMENTS,
+  GATE_SCALE,
+  WALL_DEPTH_MIN,
   backgroundRect,
+  projectRaw,
+  wallSegmentDepths,
   depthOf,
   frameForRamAttack,
   poseOf,
@@ -22,9 +23,6 @@ import {
 } from './project';
 import { artMeta } from './artMeta';
 import { computePressure, type Entity, type World } from '../sim';
-
-/** The gate is scenery drawn at the band's near edge; the camera crop makes it read as a structure rather than a prop. */
-const BASE_SCALE = 1.5;
 
 interface View {
   root: Container;
@@ -42,9 +40,8 @@ export class Renderer {
   private views = new Map<number, View>();
   private pool = new ViewPool<View>(() => this.makeView());
   private wall = new Graphics();
-  private wallSprite?: Sprite;
-  /** On-screen half-width of the wall sprite, kept so the pressure halo can hug it. Set when the wall is drawn. */
-  private wallHalfW = 100;
+  private wallSprites: Sprite[] = [];
+  private gateSprite?: Sprite;
   private wallHit = 0; // 0..1 render-only Ram strike flash/shake, set while rendering entities each frame
   private base = new Graphics();
   private pressure = new Graphics();
@@ -144,21 +141,20 @@ export class Renderer {
       bg.position.set(r.x, r.y);
       bg.width = r.width;
       bg.height = r.height;
-      bg.zIndex = -10;
+      bg.zIndex = -1_000_000; // below scenery past the band, whose zIndex goes negative
       this.world.addChild(bg);
       g.visible = false;
     }
     this.world.addChild(g, this.base, this.wall, this.pressure, this.fx);
+    this.pressure.zIndex = -999_000; // ground decal: under the wall run, above the backdrop
     this.fx.zIndex = 5000;
     const baseTex = this.tex.get('base');
     if (baseTex) {
+      // The gate belongs in the wall, at the depth the troops march out through; placed with the run each frame.
       const bs = new Sprite(baseTex);
       bs.anchor.set(0.5, 1);
-      bs.scale.set(BASE_SCALE);
-      // Keep the whole gate on screen: centre it at least half its width from the left edge.
-      bs.position.set(Math.max(w.data.config.world.baseX * X_SCALE, (baseTex.width * BASE_SCALE) / 2 + 4), BAND_NEAR_Y + 10);
-      bs.zIndex = -5; // scenery: behind the troops, in front of the backdrop
       this.world.addChild(bs);
+      this.gateSprite = bs;
     } else
       this.base
         .rect(w.data.config.world.baseX * X_SCALE - 38, BAND_NEAR_Y - 90, 46, 96)
@@ -235,7 +231,7 @@ export class Renderer {
       const drop = e.waitTotal !== undefined ? 0 : (1 - Math.min(1, e.age / f.dropTime)) * f.dropHeight;
       const dep = depthOf(e.id);
       const p = project(dep, x + (((e.id * 7) % 13) / 12 - 0.5) * MAX_JITTER_X);
-      if (e.team === 'zombie' || e.def.cost !== undefined) p.x += wallClearance(x, w.data.config.world.wallX); // walkers pass through the gate line without a visual jump
+      p.x += wallClearance(x, w.data.config.world.wallX); // keeps troops out of the wall run, which is wide and drawn over them
       v.root.position.set(p.x, p.y - drop * p.scale);
       v.root.zIndex = Math.round(p.z * 1000);
       // Sprites face right in the art. Zombies move left, so they are mirrored; player units face right.
@@ -298,11 +294,15 @@ export class Renderer {
     this.pressure.clear();
     if (w.status === 'playing' && pr.level > 0) {
       const col = pr.urgent ? 0xff2a2a : 0xffb02a;
-      // Halo sized to the wall sprite, so it reads as the wall glowing rather than a blob around it.
-      if (w.wallHp > 0)
+      // Glow along the stretch of wall the troops actually hold, laid on the ground beneath it.
+      if (w.wallHp > 0) {
+        const a = projectRaw(0, cfg.wallX);
+        const b = projectRaw(1, cfg.wallX);
         this.pressure
-          .ellipse(cfg.wallX * X_SCALE, (WALL_TOP_Y + WALL_BOTTOM_Y) / 2, this.wallHalfW + 18, (WALL_BOTTOM_Y - WALL_TOP_Y) / 2 + 14)
-          .fill({ color: 0xff2a2a, alpha: 0.15 + 0.45 * pr.level });
+          .moveTo(a.x, a.y)
+          .lineTo(b.x, b.y)
+          .stroke({ color: 0xff2a2a, width: 34, alpha: 0.1 + 0.3 * pr.level });
+      }
       const pulse = pr.urgent ? 0.8 + 0.2 * Math.sin(w.time * 14) : 1;
       const ax = this.lw - 24;
       const ay = (BAND_NEAR_Y + BAND_FAR_Y) / 2;
@@ -346,35 +346,46 @@ export class Renderer {
     const wx = cfg.wallX * X_SCALE;
     const top = BAND_FAR_Y - 30;
     const bot = BAND_NEAR_Y + 15;
-    // Frontline marker: a sandbag line where Shield troopers land.
-    for (let y = top + 20; y < bot; y += 44) this.wall.roundRect(wx + 40, y, 26, 8, 4).fill({ color: 0xb79c6a, alpha: 0.7 });
 
     const wst = f <= 0.33 ? 'damaged33' : f <= 0.66 ? 'damaged66' : 'intact';
     const wtex = (w.wallTier === 2 ? this.tex.get(`wall_t2_${wst}_00`) : undefined) ?? this.tex.get(`wall_t1_${wst}_00`);
     if (wtex) {
-      if (!this.wallSprite) {
+      const depths = wallSegmentDepths(wtex.width);
+      while (this.wallSprites.length < depths.length) {
         const sp = new Sprite();
         sp.anchor.set(0.5, 1);
         this.world.addChild(sp);
-        this.wallSprite = sp;
+        this.wallSprites.push(sp);
       }
       const fe = w.data.config.feel;
       const ramShake = this.wallHit * 4 * (Math.floor(w.time * 60) % 2 ? 1 : -1); // render-only, ~150ms decay
       const sx = (w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0) + ramShake;
-      const sp = this.wallSprite;
-      const p = project(WALL_DEPTH, cfg.wallX);
-      sp.visible = w.wallHp > 0;
-      sp.texture = wtex;
-      sp.tint = this.wallHit > 0 ? 0xffe0b0 : 0xffffff; // short light flash on the strike
-      sp.position.set(p.x + sx, WALL_BOTTOM_Y);
-      // One sprite covering the whole band: stretched on y, so the wall spans the ground the troops stand on.
-      sp.scale.set(WALL_X_SCALE, (WALL_BOTTOM_Y - WALL_TOP_Y) / wtex.height);
-      this.wallHalfW = (wtex.width * WALL_X_SCALE) / 2;
-      sp.zIndex = Math.round(p.z * 1000) + 1;
-      if (w.wallHp > 0)
-        this.wall
-          .ellipse(wx, (BAND_NEAR_Y + BAND_FAR_Y) / 2 + 4, 70 * SCALE_NEAR, (BAND_NEAR_Y - BAND_FAR_Y) / 2 + 10)
-          .fill({ color: 0x000000, alpha: 0.25 });
+      // The run climbs to the right along the depth axis; the gate replaces the segment nearest GATE_DEPTH.
+      const gateIdx = this.gateSprite
+        ? depths.reduce((best, d, i) => (Math.abs(d - GATE_DEPTH) < Math.abs(depths[best]! - GATE_DEPTH) ? i : best), 0)
+        : -1;
+      for (const sp of this.wallSprites) sp.visible = false;
+      depths.forEach((d, i) => {
+        const p = projectRaw(d, cfg.wallX);
+        const sp = this.wallSprites[i]!;
+        sp.visible = w.wallHp > 0 && (gateIdx < 0 || Math.abs(i - gateIdx) > GATE_GAP_SEGMENTS);
+        sp.texture = wtex;
+        sp.tint = this.wallHit > 0 ? 0xffe0b0 : 0xffffff; // short light flash on the strike
+        sp.position.set(p.x + sx, p.y + 6);
+        sp.scale.set(p.scale);
+        sp.zIndex = Math.round(p.z * 1000) + 1;
+        if (w.wallHp > 0)
+          this.wall.ellipse(p.x, p.y + 4, 64 * p.scale, 10 * p.scale).fill({ color: 0x000000, alpha: 0.1 });
+      });
+      if (this.gateSprite && gateIdx >= 0) {
+        const p = projectRaw(depths[gateIdx]!, cfg.wallX);
+        const g = this.gateSprite;
+        g.visible = true; // stands once the panels are gone: the troops still hold the gate
+        g.position.set(p.x + sx, p.y + 6);
+        g.scale.set(p.scale * GATE_SCALE);
+        // Ahead of every panel in the run: a gatehouse the wall abuts, not one the near panels bury.
+        g.zIndex = Math.round(projectRaw(WALL_DEPTH_MIN, 0).z * 1000) + 2;
+      }
     } else if (w.wallHp > 0) {
       const fe = w.data.config.feel;
       const sx = w.wallShake > 0 ? (Math.floor(w.time * 60) % 2 ? fe.wallShakePx : -fe.wallShakePx) : 0;
